@@ -36,10 +36,35 @@ glib.init_threads()
 
 
 ###############################################################################
+class DbusSendService:
+    @exportRpc
+    def dbusSend(self, list):
+        print "dbusSend: ", list
+
+
+###############################################################################
+class DbusSendServerProtocol(WampServerProtocol):
+	def onSessionOpen(self):
+		# create dbus-send service instance and register it for RPC.
+		self.dbusSendService = DbusSendService()
+		self.registerForRpc(self.dbusSendService)
+
+
+###############################################################################
 if __name__ == '__main__':
 	port = "9000"
 	if len(sys.argv) == 2:
 		port = sys.argv[1]
 
 	uri = "ws://localhost:" + port
-	print uri
+
+	factory = WampServerFactory(uri, debugWamp = True)
+	factory.protocol = DbusSendServerProtocol
+	factory.setProtocolOptions(allowHixie76 = True)
+
+	listenWS(factory)
+
+	DBusGMainLoop(set_as_default=True)
+
+	reactor.run()
+

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- include AutobahnJS .. that's all you need -->
+        <script src="./autobahn.min.js"></script>
+        <script src="./dbus-send.js"></script>
+    </head>
+   <body>
+        <center><h1>dbus-send</h1></center>
+        <br>
+        <table>
+        <tr><td>bus:</td>
+        	<td>
+            <select id="bus">
+              <option value="session">session</option>
+              <option value="system">system</option>
+            </select>
+            </td>
+        </tr>
+        <tr><td>destination:</td>
+        	<td>
+            <input type="text" size="40" id="destination" value="org.freedesktop.FileManager1"/>
+            </td>
+        </tr>
+        <tr><td>object:</td>
+        	<td>
+            <input type="text" size="40" id="object" value="/org/freedesktop/FileManager1"/>
+            </td>
+        </tr>
+        <tr><td>message:</td>
+        	<td>
+            <input type="text" size="40" id="message" value="org.freedesktop.FileManager1.ShowItems"/>
+            </td>
+        </tr>
+        <tr><td colspan="2" align="center">
+            <textarea cols="60" rows=6 id="args">['file:///home'], ''</textarea>
+        </td></tr>
+        <tr><td colspan="2" align="center">
+            <input type="button" value="send" onclick="dbus_send();"/>
+        </td></tr>
+        </table>
+		<br>
+		<input type="button" value="clear log" onclick="clear_log();"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>
+    </body>
+</html>

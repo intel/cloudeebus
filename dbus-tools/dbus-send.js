@@ -52,9 +52,12 @@ function dbus_send()
                	mBus.options[mBus.selectedIndex].value,
                	mDestination.value,
                	mObject.value,
-               	mMessage.value,
-               	mArgs.value
-                ]
+               	mMessage.value
+               	]
+    if (mArgs.value) {
+    	arglist.push(mArgs.value);
+    }
+
     // call dbusSend with bus type, destination, object, message and arguments
     mSession.call("dbusSend", arglist).then(myAsyncFuncSuccessCB, myAsyncFuncErrorCB);
 };

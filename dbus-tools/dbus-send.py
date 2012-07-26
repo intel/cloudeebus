@@ -39,7 +39,21 @@ glib.init_threads()
 class DbusSendService:
     @exportRpc
     def dbusSend(self, list):
-        print "dbusSend: ", list
+        if len(list) < 4:
+        	print "expected arguments: bus, destination, object, message, [args])"
+        	return 1
+        if list[0] == "session":
+        	self.bus = dbus.SessionBus()
+        elif list[0] == "system":
+        	self.bus = dbus.SystemBus()
+        else:
+        	print "invalid bus: %s" % list[0]
+        	return 2
+        
+        self.obj = self.bus.get_object(list[1], list[2])
+        self.obj.get_dbus_method(list[3])()
+
+        return 0
 
 
 ###############################################################################

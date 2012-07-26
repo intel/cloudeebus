@@ -19,21 +19,21 @@
         </tr>
         <tr><td>destination:</td>
         	<td>
-            <input type="text" size="40" id="destination" value="org.freedesktop.FileManager1"/>
+            <input type="text" size="40" id="destination" value="org.gnome.ScreenSaver"/>
             </td>
         </tr>
         <tr><td>object:</td>
         	<td>
-            <input type="text" size="40" id="object" value="/org/freedesktop/FileManager1"/>
+            <input type="text" size="40" id="object" value="/"/>
             </td>
         </tr>
         <tr><td>message:</td>
         	<td>
-            <input type="text" size="40" id="message" value="org.freedesktop.FileManager1.ShowItems"/>
+            <input type="text" size="40" id="message" value="Lock"/>
             </td>
         </tr>
         <tr><td colspan="2" align="center">
-            <textarea cols="60" rows=6 id="args">['file:///home'], ''</textarea>
+            <textarea cols="60" rows=6 id="args"></textarea>
         </td></tr>
         <tr><td colspan="2" align="center">
             <input type="button" value="send" onclick="dbus_send();"/>

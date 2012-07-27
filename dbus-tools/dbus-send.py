@@ -41,23 +41,24 @@ class DbusSendService:
     def dbusSend(self, list):
         if len(list) < 4:
         	print "expected arguments: bus, destination, object, message, [args])"
-        	return 1
+        	return "Error: wrong arguments"
         if list[0] == "session":
         	self.bus = dbus.SessionBus()
         elif list[0] == "system":
         	self.bus = dbus.SystemBus()
         else:
         	print "invalid bus: %s" % list[0]
-        	return 2
+        	return "Error: invalid bus"
         
-        args = []
+        self.args = []
         if len(list) == 5:
-         	args = json.loads(list[4])
+         	self.args = json.loads(list[4])
         
-        self.obj = self.bus.get_object(list[1], list[2])
-        self.obj.get_dbus_method(list[3])(*args)
-
-        return 0
+        self.object = self.bus.get_object(list[1], list[2])
+        self.method = self.object.get_dbus_method(list[3])
+        
+        result = self.method(*self.args)
+        return json.dumps(result)
 
 
 ###############################################################################

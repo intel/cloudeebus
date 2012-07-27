@@ -2,7 +2,7 @@
 var mSession = null;
 
 // HTML DOM elements
-var mLog, mBus, mDestination, mObject, mMessage, mArgs;
+var mLog, mBus, mDestination, mObject, mMessage, mArgs, mUri;
 
 window.onload = function() {
 
@@ -26,9 +26,10 @@ window.onload = function() {
     mObject = document.getElementById('object');
     mMessage = document.getElementById('message');
     mArgs = document.getElementById('args');
+    mUri = document.getElementById('uri');
     
     // Connect to WAMP server
-    ab.connect("ws://localhost:9000", onSessionConnectedCB, onSessionErrorCB);
+    ab.connect(mUri.value, onSessionConnectedCB, onSessionErrorCB);
 };
 
 function dbus_send()

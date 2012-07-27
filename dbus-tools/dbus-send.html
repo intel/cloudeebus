@@ -35,9 +35,13 @@
         <tr><td colspan="2" align="center">
             <textarea cols="60" rows=6 id="args"></textarea>
         </td></tr>
-        <tr><td colspan="2" align="center">
-            <input type="button" value="send" onclick="dbus_send();"/>
-        </td></tr>
+        <tr><td>
+            <input style="width:100%" type="button" value="send" onclick="dbus_send();"/>
+        	</td>
+        	<td>
+            <input type="text" size="40" id="uri" value="ws://localhost:9000"/>
+            </td>
+         </tr>
         </table>
 		<br>
 		<input type="button" value="clear log" onclick="clear_log();"/>

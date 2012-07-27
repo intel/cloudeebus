@@ -15,7 +15,7 @@
 ###############################################################################
 
 
-import sys, dbus
+import sys, dbus, json
 
 from twisted.internet import glib2reactor
 # Configure the twisted mainloop to be run inside the glib mainloop.
@@ -50,8 +50,12 @@ class DbusSendService:
         	print "invalid bus: %s" % list[0]
         	return 2
         
+        args = []
+        if len(list) == 5:
+         	args = json.loads(list[4])
+        
         self.obj = self.bus.get_object(list[1], list[2])
-        self.obj.get_dbus_method(list[3])()
+        self.obj.get_dbus_method(list[3])(*args)
 
         return 0
 

@@ -34,21 +34,22 @@ gobject.threads_init()
 from dbus import glib
 glib.init_threads()
 
+# enable debug log
+from twisted.python import log
+log.startLogging(sys.stdout)
 
 ###############################################################################
 class DbusSendService:
     @exportRpc
     def dbusSend(self, list):
         if len(list) < 4:
-        	print "expected arguments: bus, destination, object, message, [args])"
-        	return "Error: wrong arguments"
+        	raise Exception("Error: expected arguments: bus, destination, object, message, [args])")
         if list[0] == "session":
         	self.bus = dbus.SessionBus()
         elif list[0] == "system":
         	self.bus = dbus.SystemBus()
         else:
-        	print "invalid bus: %s" % list[0]
-        	return "Error: invalid bus"
+        	raise Exception("Error: invalid bus: %s" % list[0])
         
         self.args = []
         if len(list) == 5:

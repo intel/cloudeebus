@@ -42,8 +42,8 @@ log.startLogging(sys.stdout)
 class DbusSendService:
     @exportRpc
     def dbusSend(self, list):
-        if len(list) < 4:
-        	raise Exception("Error: expected arguments: bus, destination, object, message, [args])")
+        if len(list) < 5:
+        	raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
         if list[0] == "session":
         	self.bus = dbus.SessionBus()
         elif list[0] == "system":
@@ -52,11 +52,11 @@ class DbusSendService:
         	raise Exception("Error: invalid bus: %s" % list[0])
         
         self.args = []
-        if len(list) == 5:
-         	self.args = json.loads(list[4])
+        if len(list) == 6:
+         	self.args = json.loads(list[5])
         
         self.object = self.bus.get_object(list[1], list[2])
-        self.method = self.object.get_dbus_method(list[3])
+        self.method = self.object.get_dbus_method(list[4], list[3])
         
         result = self.method(*self.args)
         return json.dumps(result)

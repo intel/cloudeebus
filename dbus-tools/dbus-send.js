@@ -2,7 +2,7 @@
 var mSession = null;
 
 // HTML DOM elements
-var mLog, mBus, mDestination, mObject, mMessage, mArgs, mUri;
+var mLog, mBus, mDestination, mObject, mInterface, mMessage, mArgs, mUri;
 
 window.onload = function() {
 
@@ -24,6 +24,7 @@ window.onload = function() {
     mBus = document.getElementById('bus');
     mDestination = document.getElementById('destination');
     mObject = document.getElementById('object');
+    mInterface = document.getElementById('interface');
     mMessage = document.getElementById('message');
     mArgs = document.getElementById('args');
     mUri = document.getElementById('uri');
@@ -46,6 +47,7 @@ function dbus_send()
     	+ mBus.options[mBus.selectedIndex].value + "\n\t"
     	+ mDestination.value + "\n\t"
     	+ mObject.value + "\n\t"
+    	+ mInterface.value + "\n\t"
     	+ mMessage.value + "\n\t"
     	+ mArgs.value + "\n"
     		);
@@ -53,6 +55,7 @@ function dbus_send()
                	mBus.options[mBus.selectedIndex].value,
                	mDestination.value,
                	mObject.value,
+               	mInterface.value,
                	mMessage.value
                	]
     if (mArgs.value) {

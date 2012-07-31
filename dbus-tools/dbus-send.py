@@ -62,7 +62,8 @@ class DbusSendService:
         
         # defer dbus call
         request = defer.Deferred()
-        reactor.callLater(0, request.callback, self.dbusCallback((method, args)))
+        request.addCallback(self.dbusCallback)
+        reactor.callLater(0, request.callback, (method, args))
         
         return request
 

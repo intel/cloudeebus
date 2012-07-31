@@ -45,31 +45,31 @@ class DbusSendService:
         if len(list) < 5:
         	raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
         if list[0] == "session":
-        	self.bus = dbus.SessionBus()
+        	bus = dbus.SessionBus()
         elif list[0] == "system":
-        	self.bus = dbus.SystemBus()
+        	bus = dbus.SystemBus()
         else:
         	raise Exception("Error: invalid bus: %s" % list[0])
         
         # parse JSON arg list
-        self.args = []
+        args = []
         if len(list) == 6:
-         	self.args = json.loads(list[5])
+         	args = json.loads(list[5])
         
         # get dbus proxy
-        self.object = self.bus.get_object(list[1], list[2])
-        self.method = self.object.get_dbus_method(list[4], list[3])
+        object = bus.get_object(list[1], list[2])
+        method = object.get_dbus_method(list[4], list[3])
         
         # defer dbus call
         request = defer.Deferred()
-        reactor.callLater(0, request.callback, self.dbusCallback(self.args))
+        reactor.callLater(0, request.callback, self.dbusCallback((method, args)))
         
         return request
 
 
     def dbusCallback(self, list):
     	# call dbus method
-        result = self.method(*list)
+        result = list[0](*list[1])
         # return JSON string result
         return json.dumps(result)
 

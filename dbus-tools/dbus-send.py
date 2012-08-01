@@ -62,7 +62,7 @@ class DbusCallHandler:
 
 	def dbusError(self, error):
 		# return dbus error message
-		self.request.errback(error.get_dbus_message)
+		self.request.errback(error.get_dbus_message())
 
 
 

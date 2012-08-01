@@ -44,6 +44,7 @@ log.startLogging(sys.stdout)
 class DbusCallHandler:
 	def __init__(self, method, args):
         # deferred reply to return dbus results
+		self.pending = False
 		self.request = defer.Deferred()
 		self.method = method
 		self.args = args
@@ -51,6 +52,7 @@ class DbusCallHandler:
 
 	def callMethod(self):
 		# dbus method async call
+		self.pending = True
 		self.method(*self.args, reply_handler=self.dbusSuccess, error_handler=self.dbusError)
 		return self.request
 
@@ -58,18 +60,31 @@ class DbusCallHandler:
 	def dbusSuccess(self, *result):
 		# return JSON string result array
 		self.request.callback(json.dumps(result))
+		self.pending = False
 
 
 	def dbusError(self, error):
 		# return dbus error message
 		self.request.errback(error.get_dbus_message())
+		self.pending = False
 
 
 
 ###############################################################################
 class DbusSendService:
+    def __init__(self):
+        # pending dbus calls
+        self.pendingCalls = []
+
+
     @exportRpc
     def dbusSend(self, list):
+    	# clear pending calls
+    	for call in self.pendingCalls:
+    		if not call.pending:
+    			self.pendingCalls.remove(call)
+    	
+    	# read arguments list by position
         if len(list) < 5:
         	raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
         if list[0] == "session":
@@ -89,8 +104,9 @@ class DbusSendService:
         method = object.get_dbus_method(list[4], list[3])
         
         # use a deferred call handler to manage dbus results
-        self.dbusCallHandler = DbusCallHandler(method, args)               
-        return self.dbusCallHandler.callMethod()
+        dbusCallHandler = DbusCallHandler(method, args)
+        self.pendingCalls.append(dbusCallHandler)
+        return dbusCallHandler.callMethod()
 
 
 

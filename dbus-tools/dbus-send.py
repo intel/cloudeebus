@@ -41,6 +41,32 @@ log.startLogging(sys.stdout)
 
 
 ###############################################################################
+class DbusCallHandler:
+	def __init__(self, method, args):
+        # deferred reply to return dbus results
+		self.request = defer.Deferred()
+		self.method = method
+		self.args = args
+
+
+	def callMethod(self):
+		# dbus method async call
+		self.method(*self.args, reply_handler=self.dbusSuccess, error_handler=self.dbusError)
+		return self.request
+
+
+	def dbusSuccess(self, *result):
+		# return JSON string result array
+		self.request.callback(json.dumps(result))
+
+
+	def dbusError(self, error):
+		# return dbus error message
+		self.request.errback(error.get_dbus_message)
+
+
+
+###############################################################################
 class DbusSendService:
     @exportRpc
     def dbusSend(self, list):
@@ -62,23 +88,9 @@ class DbusSendService:
         object = bus.get_object(list[1], list[2])
         method = object.get_dbus_method(list[4], list[3])
         
-        # deferred reply to return dbus results
-        self.request = defer.Deferred()
-        # dbus method async call
-        method(*args, reply_handler=self.dbusSuccess, error_handler=self.dbusError)
-        
-        return self.request
-
-
-    def dbusSuccess(self, *result):
-        # return JSON string result array
-        self.request.callback(json.dumps(result))
-    
-    
-    def dbusError(self, error):
-    	# return dbus error message
-        self.request.errback(error.get_dbus_message)
-
+        # use a deferred call handler to manage dbus results
+        self.dbusCallHandler = DbusCallHandler(method, args)               
+        return self.dbusCallHandler.callMethod()
 
 
 

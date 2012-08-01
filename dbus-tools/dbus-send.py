@@ -38,6 +38,8 @@ glib.init_threads()
 from twisted.python import log
 log.startLogging(sys.stdout)
 
+
+
 ###############################################################################
 class DbusSendService:
     @exportRpc
@@ -74,21 +76,19 @@ class DbusSendService:
     
     
     def dbusError(self, error):
-    	# raise exception in the deferred reply context
-    	self.request.addCallback(self.raiseError)
-        self.request.callback(error)
+    	# return dbus error message
+        self.request.errback(error.get_dbus_message)
 
-    
-    def raiseError(self, error):
-        raise Exception(error)
 
-	
+
+
 ###############################################################################
 class DbusSendServerProtocol(WampServerProtocol):
 	def onSessionOpen(self):
 		# create dbus-send service instance and register it for RPC.
 		self.dbusSendService = DbusSendService()
 		self.registerForRpc(self.dbusSendService)
+
 
 
 ###############################################################################

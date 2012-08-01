@@ -60,21 +60,29 @@ class DbusSendService:
         object = bus.get_object(list[1], list[2])
         method = object.get_dbus_method(list[4], list[3])
         
-        # defer dbus call
-        request = defer.Deferred()
-        request.addCallback(self.dbusCallback)
-        reactor.callLater(0, request.callback, (method, args))
+        # deferred reply to return dbus results
+        self.request = defer.Deferred()
+        # dbus method async call
+        method(*args, reply_handler=self.dbusSuccess, error_handler=self.dbusError)
         
-        return request
+        return self.request
 
 
-    def dbusCallback(self, list):
-    	# call dbus method
-        result = list[0](*list[1])
-        # return JSON string result
-        return json.dumps(result)
+    def dbusSuccess(self, *result):
+        # return JSON string result array
+        self.request.callback(json.dumps(result))
+    
+    
+    def dbusError(self, error):
+    	# raise exception in the deferred reply context
+    	self.request.addCallback(self.raiseError)
+        self.request.callback(error)
 
+    
+    def raiseError(self, error):
+        raise Exception(error)
 
+	
 ###############################################################################
 class DbusSendServerProtocol(WampServerProtocol):
 	def onSessionOpen(self):

@@ -54,6 +54,8 @@ class DbusSignalHandler:
 		print "---- got signal:"
 		print self.id
 		print args
+		# publish dbus args under topic hash id
+		factory.dispatch(self.id, json.dumps(args))
 
 
 
@@ -87,9 +89,12 @@ class DbusRegisterService:
 ###############################################################################
 class DbusRegisterServerProtocol(WampServerProtocol):
 	def onSessionOpen(self):
-		# create dbus-send service instance and register it for RPC.
+		# create dbus-register service instance
 		self.DbusRegisterService = DbusRegisterService()
+		# register it for RPC
 		self.registerForRpc(self.DbusRegisterService)
+		# register for Publish / Subscribe
+		self.registerForPubSub("", True)
 
 
 

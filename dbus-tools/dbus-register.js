@@ -33,11 +33,18 @@ window.onload = function() {
     ab.connect(mUri.value, onSessionConnectedCB, onSessionErrorCB);
 };
 
+function sigHandler(id, data)
+{
+    log_append("got signal: " + id);
+    log_append("data: " + data + "\n");
+}
+
 function dbus_register()
 {
     // RPC success callback
     function myAsyncFuncSuccessCB(res) {
-        log_append("got result: " + res + "\n");
+        log_append("subscribing to: " + res + "\n");
+        mSession.subscribe(res, sigHandler);
     }
      // RPC error callback
     function myAsyncFuncErrorCB(error, desc) {

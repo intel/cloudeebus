@@ -41,10 +41,16 @@ log.startLogging(sys.stdout)
 
 
 ###############################################################################
+def hashId(senderName, objectName, interfaceName, signalName):
+	return senderName + "#" + objectName + "#" + interfaceName + "#" + signalName
+
+
+
+###############################################################################
 class DbusSignalHandler:
 	def __init__(self, bus, senderName, objectName, interfaceName, signalName):
 		# publish hash id
-		self.id = senderName + "#" + objectName + "#" + interfaceName + "#" + signalName
+		self.id = hashId(senderName, objectName, interfaceName, signalName)
         # connect dbus proxy object to signal
 		self.object = bus.get_object(senderName, objectName)
 		self.object.connect_to_signal(signalName, self.handleSignal, interfaceName)
@@ -68,6 +74,13 @@ class DbusRegisterService:
     	# read arguments list by position
         if len(list) < 5:
         	raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
+        
+    	# check if a handler exists
+        sigId = hashId(list[1], list[2], list[3], list[4])
+        for handler in self.signalHandlers:
+        	if handler.id == sigId:
+        		return sigId
+    	
         if list[0] == "session":
         	bus = dbus.SessionBus()
         elif list[0] == "system":

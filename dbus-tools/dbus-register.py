@@ -51,9 +51,6 @@ class DbusSignalHandler:
 
 
 	def handleSignal(self, *args):
-		print "---- got signal:"
-		print self.id
-		print args
 		# publish dbus args under topic hash id
 		factory.dispatch(self.id, json.dumps(args))
 

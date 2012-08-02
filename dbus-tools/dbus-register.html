@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- include AutobahnJS .. that's all you need -->
+        <script src="./autobahn.min.js"></script>
+        <script src="./dbus-register.js"></script>
+    </head>
+   <body>
+        <center><h1>dbus-register</h1></center>
+        <br>
+        <table>
+        <tr><td>bus:</td>
+        	<td>
+            <select id="bus">
+              <option value="session">session</option>
+              <option value="system">system</option>
+            </select>
+            </td>
+        </tr>
+        <tr><td>sender:</td>
+        	<td>
+            <input type="text" size="40" id="sender" value="org.gnome.ScreenSaver"/>
+            </td>
+        </tr>
+        <tr><td>object:</td>
+        	<td>
+            <input type="text" size="40" id="object" value="/org/gnome/ScreenSaver"/>
+            </td>
+        </tr>
+        <tr><td>interface:</td>
+        	<td>
+            <input type="text" size="40" id="interface" value="org.gnome.ScreenSaver"/>
+            </td>
+        </tr>
+        <tr><td>signal:</td>
+        	<td>
+            <input type="text" size="40" id="signal" value="ActiveChanged"/>
+            </td>
+        </tr>
+        <tr><td>
+            <input style="width:100%" type="button" value="register" onclick="dbus_register();"/>
+        	</td>
+        	<td>
+            <input type="text" size="40" id="uri" value="ws://localhost:9001"/>
+            </td>
+         </tr>
+        </table>
+		<br>
+		<input type="button" value="clear log" onclick="clear_log();"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>
+    </body>
+</html>

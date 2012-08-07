@@ -94,10 +94,23 @@ class DbusCallHandler:
 ###############################################################################
 class CloudeebusService:
     def __init__(self):
+        # dbus connexions
+    	self.dbusConnexions = {}
     	# signal handlers
     	self.signalHandlers = {}
         # pending dbus calls
         self.pendingCalls = []
+
+
+    def dbusConnexion(self, busName):
+    	if not self.dbusConnexions.has_key(busName):
+    		if busName == "session":
+    			self.dbusConnexions[busName] = dbus.SessionBus()
+    		elif busName == "system":
+    			self.dbusConnexions[busName] = dbus.SystemBus()
+        	else:
+        		raise Exception("Error: invalid bus: %s" % busName)
+    	return self.dbusConnexions[busName]
 
 
     @exportRpc
@@ -111,12 +124,8 @@ class CloudeebusService:
         if self.signalHandlers.has_key(sigId):
         	return sigId
     	
-        if list[0] == "session":
-        	bus = dbus.SessionBus()
-        elif list[0] == "system":
-        	bus = dbus.SystemBus()
-        else:
-        	raise Exception("Error: invalid bus: %s" % list[0])
+        # get dbus connexion
+        bus = self.dbusConnexion(list[0])
         
         # create a handler that will publish the signal
         dbusSignalHandler = DbusSignalHandler(bus, list[1], list[2], list[3], list[4])
@@ -135,12 +144,9 @@ class CloudeebusService:
     	# read arguments list by position
         if len(list) < 5:
         	raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
-        if list[0] == "session":
-        	bus = dbus.SessionBus()
-        elif list[0] == "system":
-        	bus = dbus.SystemBus()
-        else:
-        	raise Exception("Error: invalid bus: %s" % list[0])
+        
+        # get dbus connexion
+        bus = self.dbusConnexion(list[0])
         
         # parse JSON arg list
         args = []

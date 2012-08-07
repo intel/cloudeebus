@@ -100,6 +100,8 @@ class CloudeebusService:
     	self.dbusConnexions = {}
         # proxy objects
         self.proxyObjects = {}
+        # proxy methods
+        self.proxyMethods = {}
     	# signal handlers
     	self.signalHandlers = {}
         # pending dbus calls
@@ -122,6 +124,14 @@ class CloudeebusService:
     	if not self.proxyObjects.has_key(id):
     		self.proxyObjects[id] = bus.get_object(serviceName, objectName)
     	return self.proxyObjects[id]
+
+
+    def proxyMethod(self, bus, serviceName, objectName, interfaceName, methodName):
+    	id = hashId([serviceName, objectName, interfaceName, methodName])
+    	if not self.proxyMethods.has_key(id):
+    		obj = self.proxyObject(bus, serviceName, objectName)
+    		self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
+    	return self.proxyMethods[id]
 
 
     @exportRpc
@@ -168,8 +178,7 @@ class CloudeebusService:
          	args = json.loads(list[5])
         
         # get dbus proxy
-        object = self.proxyObject(bus, list[1], list[2])
-        method = object.get_dbus_method(list[4], list[3])
+        method = self.proxyMethod(bus, *list[1:5])
         
         # use a deferred call handler to manage dbus results
         dbusCallHandler = DbusCallHandler(method, args)

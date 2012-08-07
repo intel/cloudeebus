@@ -66,7 +66,7 @@ class DbusSignalHandler:
 class DbusRegisterService:
     def __init__(self):
     	# signal handlers
-    	self.signalHandlers = []
+    	self.signalHandlers = {}
 
 
     @exportRpc
@@ -77,9 +77,8 @@ class DbusRegisterService:
         
     	# check if a handler exists
         sigId = hashId(list[1], list[2], list[3], list[4])
-        for handler in self.signalHandlers:
-        	if handler.id == sigId:
-        		return sigId
+        if self.signalHandlers.has_key(sigId):
+        	return sigId
     	
         if list[0] == "session":
         	bus = dbus.SessionBus()
@@ -90,7 +89,7 @@ class DbusRegisterService:
         
         # create a handler that will publish the signal
         dbusSignalHandler = DbusSignalHandler(bus, list[1], list[2], list[3], list[4])
-        self.signalHandlers.append(dbusSignalHandler)
+        self.signalHandlers[sigId] = dbusSignalHandler
         
         return dbusSignalHandler.id
 

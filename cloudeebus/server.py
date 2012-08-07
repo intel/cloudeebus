@@ -51,12 +51,11 @@ def hashId(list):
 
 ###############################################################################
 class DbusSignalHandler:
-	def __init__(self, bus, senderName, objectName, interfaceName, signalName):
+	def __init__(self, bus, object, senderName, objectName, interfaceName, signalName):
 		# publish hash id
 		self.id = hashId([senderName, objectName, interfaceName, signalName])
         # connect dbus proxy object to signal
-		self.object = bus.get_object(senderName, objectName)
-		self.object.connect_to_signal(signalName, self.handleSignal, interfaceName)
+		object.connect_to_signal(signalName, self.handleSignal, interfaceName)
 
 
 	def handleSignal(self, *args):
@@ -99,6 +98,8 @@ class CloudeebusService:
     def __init__(self):
         # dbus connexions
     	self.dbusConnexions = {}
+        # proxy objects
+        self.proxyObjects = {}
     	# signal handlers
     	self.signalHandlers = {}
         # pending dbus calls
@@ -116,6 +117,13 @@ class CloudeebusService:
     	return self.dbusConnexions[busName]
 
 
+    def proxyObject(self, bus, serviceName, objectName):
+    	id = hashId([serviceName, objectName])
+    	if not self.proxyObjects.has_key(id):
+    		self.proxyObjects[id] = bus.get_object(serviceName, objectName)
+    	return self.proxyObjects[id]
+
+
     @exportRpc
     def dbusRegister(self, list):
     	# read arguments list by position
@@ -130,8 +138,11 @@ class CloudeebusService:
         # get dbus connexion
         bus = self.dbusConnexion(list[0])
         
+        # get dbus proxy
+        object = self.proxyObject(bus, list[1], list[2])
+        
         # create a handler that will publish the signal
-        dbusSignalHandler = DbusSignalHandler(bus, *list[1:5])
+        dbusSignalHandler = DbusSignalHandler(bus, object, *list[1:5])
         self.signalHandlers[sigId] = dbusSignalHandler
         
         return dbusSignalHandler.id
@@ -157,7 +168,7 @@ class CloudeebusService:
          	args = json.loads(list[5])
         
         # get dbus proxy
-        object = bus.get_object(list[1], list[2])
+        object = self.proxyObject(bus, list[1], list[2])
         method = object.get_dbus_method(list[4], list[3])
         
         # use a deferred call handler to manage dbus results

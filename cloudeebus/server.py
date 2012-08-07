@@ -41,8 +41,11 @@ log.startLogging(sys.stdout)
 
 
 ###############################################################################
-def hashId(senderName, objectName, interfaceName, signalName):
-	return senderName + "#" + objectName + "#" + interfaceName + "#" + signalName
+def hashId(list):
+	str = list[0]
+	for item in list[1:len(list)]:
+		str += "#" + item
+	return str
 
 
 
@@ -50,7 +53,7 @@ def hashId(senderName, objectName, interfaceName, signalName):
 class DbusSignalHandler:
 	def __init__(self, bus, senderName, objectName, interfaceName, signalName):
 		# publish hash id
-		self.id = hashId(senderName, objectName, interfaceName, signalName)
+		self.id = hashId([senderName, objectName, interfaceName, signalName])
         # connect dbus proxy object to signal
 		self.object = bus.get_object(senderName, objectName)
 		self.object.connect_to_signal(signalName, self.handleSignal, interfaceName)
@@ -120,7 +123,7 @@ class CloudeebusService:
         	raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
         
     	# check if a handler exists
-        sigId = hashId(list[1], list[2], list[3], list[4])
+        sigId = hashId(list[1:5])
         if self.signalHandlers.has_key(sigId):
         	return sigId
     	
@@ -128,7 +131,7 @@ class CloudeebusService:
         bus = self.dbusConnexion(list[0])
         
         # create a handler that will publish the signal
-        dbusSignalHandler = DbusSignalHandler(bus, list[1], list[2], list[3], list[4])
+        dbusSignalHandler = DbusSignalHandler(bus, *list[1:5])
         self.signalHandlers[sigId] = dbusSignalHandler
         
         return dbusSignalHandler.id

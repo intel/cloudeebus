@@ -147,3 +147,38 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
     self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
 }
 
+
+cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
+	
+	var self = this; 
+
+	function signalHandler(id, data) {
+		cloudeebus.log("Object: " + self.objectPath + " received signal: " + signal + " id: " + id);
+		if (successCB)
+			successCB(JSON.parse(data));		
+	};
+	
+	function connectToSignalSuccessCB(str) {
+		cloudeebus.log("Object: " + self.objectPath + " subscribing to signal: " + str);
+		self.wampSession.subscribe(str, signalHandler);
+	};
+
+	function connectToSignalErrorCB(error) {
+		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath);
+		cloudeebus.log(error.desc);
+		if (errorCB)
+			errorCB(error.desc);
+	};
+
+    var arglist = [
+		self.busConnection.name,
+		self.busName,
+		self.objectPath,
+		ifName,
+		signal
+	];
+
+    // call dbusSend with bus type, destination, object, message and arguments
+    self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
+}
+

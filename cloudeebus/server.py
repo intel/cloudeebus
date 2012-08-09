@@ -186,6 +186,19 @@ class CloudeebusService:
         return dbusCallHandler.callMethod()
 
 
+    @exportRpc
+    def listNames(self, list):
+    	# read arguments list by position
+    	if len(list) < 1:
+    		raise Exception("Error: expected arguments: bus)")
+        
+        # get dbus connexion
+        bus = self.dbusConnexion(list[0])
+        
+        # return bus names as json array
+        return json.dumps(bus.list_names())    
+
+
 
 ###############################################################################
 class CloudeebusServerProtocol(WampServerProtocol):

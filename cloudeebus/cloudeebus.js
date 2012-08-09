@@ -101,3 +101,49 @@ cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
 }
 
 
+cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath) {
+	return new cloudeebus.ProxyObject(this.wampSession, this, busName, objectPath);
+}
+
+
+
+/*****************************************************************************/
+
+cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
+	this.wampSession = session; 
+	this.busConnection = busConnection; 
+	this.busName = busName; 
+	this.objectPath = objectPath; 
+	return this;
+}
+
+
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
+	
+	var self = this; 
+
+	function callMethodSuccessCB(str) {
+		if (successCB)
+			successCB(JSON.parse(str));
+	};
+
+	function callMethodErrorCB(error) {
+		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath);
+		cloudeebus.log(error.desc);
+		if (errorCB)
+			errorCB(error.desc);
+	};
+
+    var arglist = [
+		self.busConnection.name,
+		self.busName,
+		self.objectPath,
+		ifName,
+		method,
+		JSON.stringify(args)
+	];
+
+    // call dbusSend with bus type, destination, object, message and arguments
+    self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+}
+

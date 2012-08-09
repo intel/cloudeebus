@@ -89,22 +89,15 @@ cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
 			successCB(JSON.parse(str));
 	};
 
-	function listNamesErrorCB() {
+	function listNamesErrorCB(error) {
 		cloudeebus.log("Failed to list names for bus: " + self.name);
+		cloudeebus.log(error.desc);
 		if (errorCB)
-			errorCB();
+			errorCB(error.desc);
 	};
 
     // call listNames with bus name
 	self.wampSession.call("listNames", [self.name]).then(listNamesSuccessCB, listNamesErrorCB);
 }
-
-
-/*****************************************************************************/
-
-
-
-
-
 
 

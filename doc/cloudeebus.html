@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="./autobahn.min.js"></script>
+        <script src="../cloudeebus/cloudeebus.js"></script>
+    </head>
+   <body>
+        <center><h1>cloudeebus</h1></center>
+        <br>
+		<textarea cols="80" rows=24 id="script">
+cloudeebus.log = function(msg) {
+  document.getElementById("log").innerHTML += msg + "\n";
+}
+
+function logBusNames(busNames) {
+  for (var i=0; i<busNames.length; i++) {
+    cloudeebus.log(busNames[i]);
+  }
+}
+
+function connectSuccess() {
+  var bus = cloudeebus.SessionBus();
+  bus.listNames(logBusNames);
+}
+
+function connectError(msg) {
+  cloudeebus.log("connexion failed: " + msg);
+}
+
+
+cloudeebus.connect("ws://localhost:9000", connectSuccess, connectError);
+</textarea>
+		<br>
+		<input type="button" value="run script" onclick="eval(document.getElementById('script').value)"/>
+		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>
+   </body>
+</html>
+

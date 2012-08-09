@@ -18,15 +18,35 @@ function logBusNames(busNames) {
   }
 }
 
+var proxy, interval;
+
 function connectSuccess() {
   var bus = cloudeebus.SessionBus();
   bus.listNames(logBusNames);
+  proxy = bus.getObject("org.gnome.ScreenSaver","/");
+  proxy.callMethod("org.gnome.ScreenSaver","SetActive",[true],lockOk,errorCB);
 }
 
 function connectError(msg) {
   cloudeebus.log("connexion failed: " + msg);
 }
 
+function unLock() {
+  proxy.callMethod("org.gnome.ScreenSaver","SetActive",[false],successCB,errorCB);
+  clearInterval(interval);
+}
+
+function lockOk(res) {
+  interval = setInterval(unLock,10000);
+}
+
+function successCB(res) {
+  cloudeebus.log("got result: " + res + "\n");
+}
+
+function errorCB(error) {
+  cloudeebus.log("error: " + error + "\n");
+}
 
 cloudeebus.connect("ws://localhost:9000", connectSuccess, connectError);
 </textarea>

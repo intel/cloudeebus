@@ -101,8 +101,11 @@ cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
 }
 
 
-cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath) {
-	return new cloudeebus.ProxyObject(this.wampSession, this, busName, objectPath);
+cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
+	var proxy = new cloudeebus.ProxyObject(this.wampSession, this, busName, objectPath);
+	if (introspectCB)
+		proxy._introspect(introspectCB, errorCB);
+	return proxy;
 }
 
 

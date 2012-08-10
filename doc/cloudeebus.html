@@ -25,17 +25,16 @@ function connectSuccess() {
   bus.listNames(logBusNames);
   handler = bus.getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
   handler.connectToSignal("org.gnome.ScreenSaver", "ActiveChanged", successCB, errorCB);
-  proxy = bus.getObject("org.gnome.ScreenSaver", "/");
-  proxy._introspect(function(){proxy.SetActive(true, lockOk, errorCB);});
-}
-
-function connectError(msg) {
-  cloudeebus.log("connexion failed: " + msg);
+  proxy = bus.getObject("org.gnome.ScreenSaver", "/", lock, errorCB);
 }
 
 function unLock() {
   proxy.SetActive(false, successCB, errorCB);
   clearInterval(interval);
+}
+
+function lock() {
+  proxy.SetActive(true, lockOk, errorCB);
 }
 
 function lockOk(res) {
@@ -50,7 +49,7 @@ function errorCB(error) {
   cloudeebus.log("error: " + error + "\n");
 }
 
-cloudeebus.connect("ws://localhost:9000", connectSuccess, connectError);
+cloudeebus.connect("ws://localhost:9000", connectSuccess, errorCB);
 </textarea>
 		<br>
 		<input type="button" value="run script" onclick="eval(document.getElementById('script').value)"/>

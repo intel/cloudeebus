@@ -118,8 +118,44 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 }
 
 
-cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	
+	var self = this; 
+
+	function introspectSuccessCB(str) {
+		var parser = new DOMParser();
+		var xmlDoc = parser.parseFromString(str, "text/xml");
+		var interfaces = xmlDoc.getElementsByTagName("interface");
+		for (var i=0; i < interfaces.length; i++) {
+			var method = interfaces[i].firstChild;
+			while (method) {
+				if (method.nodeName == "method") {
+					var nArgs = 0;
+					var arg = method.firstChild;
+					while (arg) {
+						if (arg.nodeName == "arg" &&
+							arg.attributes.getNamedItem("direction").value == "in")
+								nArgs++;
+						arg = arg.nextSibling;
+					}
+					self._addMethod(interfaces[i].attributes.getNamedItem("name").value, 
+							method.attributes.getNamedItem("name").value, 
+							nArgs);
+				}
+				method = method.nextSibling;
+			}
+		}
+		if (successCB)
+			successCB(str);
+	};
+
+    // call Introspect on self
+    self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
+}
+
+
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+
 	var self = this;
 	
 	self[method] = function() {

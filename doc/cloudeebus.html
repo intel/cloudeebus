@@ -26,7 +26,7 @@ function connectSuccess() {
   handler = bus.getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
   handler.connectToSignal("org.gnome.ScreenSaver", "ActiveChanged", successCB, errorCB);
   proxy = bus.getObject("org.gnome.ScreenSaver", "/");
-  proxy.callMethod("org.gnome.ScreenSaver", "SetActive", [true], lockOk, errorCB);
+  proxy._introspect(function(){proxy.SetActive(true, lockOk, errorCB);});
 }
 
 function connectError(msg) {
@@ -34,12 +34,12 @@ function connectError(msg) {
 }
 
 function unLock() {
-  proxy.callMethod("org.gnome.ScreenSaver", "SetActive", [false], successCB, errorCB);
+  proxy.SetActive(false, successCB, errorCB);
   clearInterval(interval);
 }
 
 function lockOk(res) {
-  interval = setInterval(unLock,10000);
+  interval = setInterval(unLock,3000);
 }
 
 function successCB(res) {

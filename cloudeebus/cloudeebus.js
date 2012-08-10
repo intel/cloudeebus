@@ -118,6 +118,28 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 }
 
 
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+	
+	var self = this;
+	
+	self[method] = function() {
+		if (arguments.length < nArgs || arguments.length > nArgs + 2)
+			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
+		var args = [];
+		var successCB = null;
+		var errorCB = null;
+		for (var i=0; i < nArgs; i++ )
+			args.push(arguments[i]);
+		if (arguments.length > nArgs)
+			successCB = arguments[nArgs];
+		if (arguments.length > nArgs + 1)
+			errorCB = arguments[nArgs + 1];
+		self.callMethod(ifName, method, args, successCB, errorCB);
+	}
+	
+}
+
+
 cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
 	
 	var self = this; 
@@ -181,4 +203,3 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
     // call dbusSend with bus type, destination, object, message and arguments
     self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
 }
-

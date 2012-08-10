@@ -149,7 +149,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			}
 		}
 		if (successCB)
-			successCB(str);
+			successCB(self);
 	};
 
     // call Introspect on self

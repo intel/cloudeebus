@@ -185,7 +185,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 
 	function callMethodSuccessCB(str) {
 		if (successCB)
-			successCB(JSON.parse(str));
+			successCB.apply(self, JSON.parse(str));
 	};
 
 	function callMethodErrorCB(error) {
@@ -216,7 +216,7 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 	function signalHandler(id, data) {
 		cloudeebus.log("Object: " + self.objectPath + " received signal: " + signal + " id: " + id);
 		if (successCB)
-			successCB(JSON.parse(data));		
+			successCB.apply(self, JSON.parse(data));		
 	};
 	
 	function connectToSignalSuccessCB(str) {

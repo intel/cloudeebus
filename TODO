@@ -1,0 +1,32 @@
+Session disconnect:
+-------------------
+- gracefully handle session disconnect
+- investigate disconnect / cleanup API
+
+
+Object / method cache:
+--------------------
+- design cache cleanup mechanism, periodic or on demand.
+- optimize cache if needed.
+- investigate Javascript object destructor callbacks.
+
+
+Distribution:
+-------------
+- setup.py installer.
+- investigate debian package for Ubuntu.
+- investigate javascript library minimizing / obfuscation.
+
+
+Proxy object properties:
+------------------------
+- create interface table at introspection.
+- create properties at introspection if "org.freedesktop.DBus.Properties" interface available.
+- add "onPropertiesChanged(successCB)" method to automatically update properties.
+
+
+Source reorg:
+-------------
+- dbus-tools: html only (send / register)
+- doc: sample page only, move autobahn to /lib
+- server.py: rename cloudeebus.py

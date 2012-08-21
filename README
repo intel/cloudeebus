@@ -7,7 +7,7 @@ Cloudeebus is a component which enables calling dbus methods and registering on 
 Example:
 --------
 
-The dbus-tools folder contains a dbus-send and a dbus-register server, with corresponding test pages. 
+The dbus-tools folder contains a dbus-send and a dbus-register server, with corresponding test pages.
 Running a demo:
 
 python dbus-tools/dbus-send.py &

@@ -125,14 +125,37 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	
 	var self = this; 
 
+	function getAllPropertiesSuccessCB(props) {
+		for (var prop in props)
+			self[prop] = props[prop];
+		getAllPropertiesFailSafeCB();
+	};
+	
+	function getAllPropertiesFailSafeCB(str) {
+		if (self.interfaces.length > 0) 
+		    self.callMethod("org.freedesktop.DBus.Properties", 
+		    		"GetAll", 
+		    		[self.interfaces.pop()], 
+		    		getAllPropertiesSuccessCB, 
+		    		getAllPropertiesFailSafeCB);
+		else {
+			self.interfaces = null;
+			if (successCB)
+				successCB(self);
+		}
+	};
+			
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.interfaces = [];
+		var hasProperties = false;
 		for (var i=0; i < interfaces.length; i++) {
 			var ifName = interfaces[i].attributes.getNamedItem("name").value;
 			self.interfaces.push(ifName);
+			if (ifName == "org.freedesktop.DBus.Properties")
+				hasProperties = true;
 			var method = interfaces[i].firstChild;
 			while (method) {
 				if (method.nodeName == "method") {
@@ -151,8 +174,18 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 				method = method.nextSibling;
 			}
 		}
-		if (successCB)
-			successCB(self);
+		if (hasProperties) {
+		    self.callMethod("org.freedesktop.DBus.Properties", 
+		    		"GetAll", 
+		    		[self.interfaces.pop()], 
+		    		getAllPropertiesSuccessCB, 
+		    		getAllPropertiesFailSafeCB);
+		}
+		else {
+			self.interfaces = null;
+			if (successCB)
+				successCB(self);
+		}
 	};
 
     // call Introspect on self

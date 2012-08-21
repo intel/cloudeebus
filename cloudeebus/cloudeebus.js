@@ -129,7 +129,10 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
 		var interfaces = xmlDoc.getElementsByTagName("interface");
+		self.interfaces = [];
 		for (var i=0; i < interfaces.length; i++) {
+			var ifName = interfaces[i].attributes.getNamedItem("name").value;
+			self.interfaces.push(ifName);
 			var method = interfaces[i].firstChild;
 			while (method) {
 				if (method.nodeName == "method") {
@@ -141,7 +144,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 								nArgs++;
 						arg = arg.nextSibling;
 					}
-					self._addMethod(interfaces[i].attributes.getNamedItem("name").value, 
+					self._addMethod(ifName, 
 							method.attributes.getNamedItem("name").value, 
 							nArgs);
 				}

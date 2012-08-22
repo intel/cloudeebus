@@ -43,7 +43,7 @@ cloudeebus.connect = function(uri, successCB, errorCB) {
 		cloudeebus.log("Connected to " + cloudeebus.uri);
 		if (successCB)
 			successCB();
-	};
+	}
 
 	function onWAMPSessionErrorCB(code, reason) {
 		if (code == ab.CONNECTION_UNSUPPORTED) {
@@ -54,7 +54,7 @@ cloudeebus.connect = function(uri, successCB, errorCB) {
 		}
 		if (errorCB)
 			errorCB(reason);
-	};
+	}
 
 	return ab.connect(cloudeebus.uri, onWAMPSessionConnectedCB, onWAMPSessionErrorCB);
 };
@@ -77,7 +77,7 @@ cloudeebus.BusConnection = function(name, session) {
 	this.name = name;
 	this.wampSession = session;
 	return this;
-}
+};
 
 
 cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
@@ -87,18 +87,18 @@ cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
 	function listNamesSuccessCB(str) {
 		if (successCB)
 			successCB(JSON.parse(str));
-	};
+	}
 
 	function listNamesErrorCB(error) {
 		cloudeebus.log("Failed to list names for bus: " + self.name);
 		cloudeebus.log(error.desc);
 		if (errorCB)
 			errorCB(error.desc);
-	};
+	}
 
     // call listNames with bus name
 	self.wampSession.call("listNames", [self.name]).then(listNamesSuccessCB, listNamesErrorCB);
-}
+};
 
 
 cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
@@ -106,7 +106,7 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 	if (introspectCB)
 		proxy._introspect(introspectCB, errorCB);
 	return proxy;
-}
+};
 
 
 
@@ -118,7 +118,7 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.busName = busName; 
 	this.objectPath = objectPath; 
 	return this;
-}
+};
 
 
 cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
@@ -129,21 +129,21 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		for (var prop in props)
 			self[prop] = props[prop];
 		getAllPropertiesFailSafeCB();
-	};
+	}
 	
 	function getAllPropertiesFailSafeCB(str) {
 		if (self.interfaces.length > 0) 
 		    self.callMethod("org.freedesktop.DBus.Properties", 
-		    		"GetAll", 
-		    		[self.interfaces.pop()], 
-		    		getAllPropertiesSuccessCB, 
-		    		getAllPropertiesFailSafeCB);
+				"GetAll", 
+				[self.interfaces.pop()], 
+				getAllPropertiesSuccessCB, 
+				getAllPropertiesFailSafeCB);
 		else {
 			self.interfaces = null;
 			if (successCB)
 				successCB(self);
 		}
-	};
+	}
 			
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
@@ -176,21 +176,21 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		}
 		if (hasProperties) {
 		    self.callMethod("org.freedesktop.DBus.Properties", 
-		    		"GetAll", 
-		    		[self.interfaces.pop()], 
-		    		getAllPropertiesSuccessCB, 
-		    		getAllPropertiesFailSafeCB);
+				"GetAll", 
+				[self.interfaces.pop()], 
+				getAllPropertiesSuccessCB, 
+				getAllPropertiesFailSafeCB);
 		}
 		else {
 			self.interfaces = null;
 			if (successCB)
 				successCB(self);
 		}
-	};
+	}
 
     // call Introspect on self
     self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
-}
+};
 
 
 cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
@@ -210,9 +210,9 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 		if (arguments.length > nArgs + 1)
 			errorCB = arguments[nArgs + 1];
 		self.callMethod(ifName, method, args, successCB, errorCB);
-	}
+	};
 	
-}
+};
 
 
 cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
@@ -222,14 +222,14 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 	function callMethodSuccessCB(str) {
 		if (successCB)
 			successCB.apply(self, JSON.parse(str));
-	};
+	}
 
 	function callMethodErrorCB(error) {
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath);
 		cloudeebus.log(error.desc);
 		if (errorCB)
 			errorCB(error.desc);
-	};
+	}
 
     var arglist = [
 		self.busConnection.name,
@@ -242,7 +242,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 
     // call dbusSend with bus type, destination, object, message and arguments
     self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
-}
+};
 
 
 cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
@@ -253,19 +253,19 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 		cloudeebus.log("Object: " + self.objectPath + " received signal: " + signal + " id: " + id);
 		if (successCB)
 			successCB.apply(self, JSON.parse(data));		
-	};
+	}
 	
 	function connectToSignalSuccessCB(str) {
 		cloudeebus.log("Object: " + self.objectPath + " subscribing to signal: " + str);
 		self.wampSession.subscribe(str, signalHandler);
-	};
+	}
 
 	function connectToSignalErrorCB(error) {
 		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath);
 		cloudeebus.log(error.desc);
 		if (errorCB)
 			errorCB(error.desc);
-	};
+	}
 
     var arglist = [
 		self.busConnection.name,
@@ -277,4 +277,4 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 
     // call dbusSend with bus type, destination, object, message and arguments
     self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
-}
+};

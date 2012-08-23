@@ -23,3 +23,9 @@ Cloudeebus uses code from the following open-source projects
 
   * [AutobahnJS](http://autobahn.ws/js)
   * [AutobahnPython](http://autobahn.ws/python)
+
+
+Install:
+--------
+
+	sudo python setup.py install

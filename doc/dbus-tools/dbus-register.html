@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- include AutobahnJS .. that's all you need -->
+		<script src="../../lib/autobahn.min.js"></script>
+		<script language="javascript" type="text/javascript">
+		// WAMP session object
+		var mSession = null;
+
+		// HTML DOM elements
+		var mLog, mBus, mSender, mObject, mInterface, mSignal, mArgs, mUri;
+
+		window.onload = function() {
+
+			function onSessionConnectedCB(session) { // WAMP session was established
+				mSession = session;
+				log_append("Session successfully connected.");
+			}
+
+			function onSessionErrorCB(code, reason) { // WAMP session is gone
+				mSession = null;
+				if (code == ab.CONNECTION_UNSUPPORTED) {
+					log_append("Browser is not supported");
+				} else {
+					log_append("Failed to open session, code = " + code + ", reason = " + reason);
+				}
+			}
+
+			mLog = document.getElementById('log');
+			mBus = document.getElementById('bus');
+			mSender = document.getElementById('sender');
+			mObject = document.getElementById('object');
+			mInterface = document.getElementById('interface');
+			mSignal = document.getElementById('signal');
+			mArgs = document.getElementById('args');
+			mUri = document.getElementById('uri');
+
+			// Connect to WAMP server
+			ab.connect(mUri.value, onSessionConnectedCB, onSessionErrorCB);
+		};
+
+		function sigHandler(id, data) {
+			log_append("got signal: " + id);
+			log_append("data: " + data + "\n");
+		}
+
+		function dbus_register() {
+			// RPC success callback
+			function myAsyncFuncSuccessCB(res) {
+				log_append("subscribing to: " + res + "\n");
+				mSession.subscribe(res, sigHandler);
+			}
+
+			// RPC error callback
+			function myAsyncFuncErrorCB(error, desc) {
+				log_append("error: " + desc + "\n");
+			}
+
+			log_append("dbusRegister: "
+				+ mBus.options[mBus.selectedIndex].value + "\n\t"
+				+ mSender.value + "\n\t"
+				+ mObject.value + "\n\t"
+				+ mInterface.value + "\n\t"
+				+ mSignal.value + "\n"
+				);
+
+			var arglist = [
+				mBus.options[mBus.selectedIndex].value,
+				mSender.value,
+				mObject.value,
+				mInterface.value,
+				mSignal.value
+				]
+
+			// call dbusRegister with bus type, sender, object, and signal
+			mSession.call("dbusRegister", arglist).then(myAsyncFuncSuccessCB, myAsyncFuncErrorCB);
+		};
+
+		function log_append(message) {
+		    mLog.innerHTML += message + '\n';
+		    mLog.scrollTop = mLog.scrollHeight;
+		};
+
+		function clear_log() {
+		mLog.innerHTML = "";
+		mLog.scrollTop = mLog.scrollHeight;
+		};
+		</script>
+	</head>
+	<body>
+		<center><h1>dbus-register</h1></center>
+		<br>
+		<table>
+			<tr>
+				<td>bus:</td>
+				<td>
+					<select id="bus">
+						<option value="session">session</option>
+						<option value="system">system</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>sender:</td>
+				<td><input type="text" size="40" id="sender" value="org.gnome.ScreenSaver"/></td>
+			</tr>
+			<tr>
+				<td>object:</td>
+				<td><input type="text" size="40" id="object" value="/org/gnome/ScreenSaver"/></td>
+			</tr>
+			<tr>
+				<td>interface:</td>
+				<td><input type="text" size="40" id="interface" value="org.gnome.ScreenSaver"/></td>
+			</tr>
+			<tr>
+				<td>signal:</td>
+				<td><input type="text" size="40" id="signal" value="ActiveChanged"/></td>
+			</tr>
+			<tr>
+				<td><input style="width:100%" type="button" value="register" onclick="dbus_register();"/></td>
+				<td><input type="text" size="40" id="uri" value="ws://localhost:9000"/></td>
+			</tr>
+		</table>
+		<br>
+		<input type="button" value="clear log" onclick="clear_log();"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>
+	</body>
+</html>

@@ -24,9 +24,3 @@ Proxy object properties:
 - create properties at introspection if "org.freedesktop.DBus.Properties" interface available.
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
 
-
-Source reorg:
--------------
-- dbus-tools: html only (send / register)
-- doc: sample page only, move autobahn to /lib
-- server.py: rename cloudeebus.py

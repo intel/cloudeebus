@@ -128,61 +128,62 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	function getAllPropertiesSuccessCB(props) {
 		for (var prop in props)
 			self[prop] = props[prop];
-		getAllPropertiesFailSafeCB();
-	}
-	
-	function getAllPropertiesFailSafeCB(str) {
-		if (self.interfaces.length > 0) 
+		if (self.propInterfaces.length > 0) 
 		    self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.interfaces.pop()], 
+				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
-				getAllPropertiesFailSafeCB);
+				errorCB);
 		else {
-			self.interfaces = null;
+			self.propInterfaces = null;
 			if (successCB)
 				successCB(self);
 		}
 	}
-			
+	
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
 		var interfaces = xmlDoc.getElementsByTagName("interface");
-		self.interfaces = [];
-		var hasProperties = false;
+		self.propInterfaces = [];
+		var supportDBusProperties = false;
 		for (var i=0; i < interfaces.length; i++) {
 			var ifName = interfaces[i].attributes.getNamedItem("name").value;
-			self.interfaces.push(ifName);
 			if (ifName == "org.freedesktop.DBus.Properties")
-				hasProperties = true;
-			var method = interfaces[i].firstChild;
-			while (method) {
-				if (method.nodeName == "method") {
+				supportDBusProperties = true;
+			var hasProperties = false;
+			var ifChild = interfaces[i].firstChild;
+			while (ifChild) {
+				if (ifChild.nodeName == "method") {
 					var nArgs = 0;
-					var arg = method.firstChild;
-					while (arg) {
-						if (arg.nodeName == "arg" &&
-							arg.attributes.getNamedItem("direction").value == "in")
+					var metChild = ifChild.firstChild;
+					while (metChild) {
+						if (metChild.nodeName == "arg" &&
+							metChild.attributes.getNamedItem("direction").value == "in")
 								nArgs++;
-						arg = arg.nextSibling;
+						metChild = metChild.nextSibling;
 					}
 					self._addMethod(ifName, 
-							method.attributes.getNamedItem("name").value, 
+							ifChild.attributes.getNamedItem("name").value, 
 							nArgs);
 				}
-				method = method.nextSibling;
+				else if (ifChild.nodeName == "property") {
+					if (!hasProperties)
+						self.propInterfaces.push(ifName);
+					hasProperties = true;
+				}
+				ifChild = ifChild.nextSibling;
 			}
 		}
-		if (hasProperties) {
+		if (supportDBusProperties && self.propInterfaces.length > 0) {
 		    self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.interfaces.pop()], 
+				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
-				getAllPropertiesFailSafeCB);
+				errorCB);
 		}
 		else {
-			self.interfaces = null;
+			self.propInterfaces = null;
 			if (successCB)
 				successCB(self);
 		}

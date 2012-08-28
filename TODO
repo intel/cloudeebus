@@ -18,7 +18,6 @@ Distribution:
 
 Proxy object properties:
 ------------------------
-- try to retrieve properties at introspection only if mentioned in xml data.
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
 
 

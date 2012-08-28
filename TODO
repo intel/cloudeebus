@@ -5,7 +5,7 @@ Session disconnect:
 
 
 Object / method cache:
---------------------
+----------------------
 - design cache cleanup mechanism, periodic or on demand.
 - optimize cache if needed.
 - investigate Javascript object destructor callbacks.
@@ -13,14 +13,15 @@ Object / method cache:
 
 Distribution:
 -------------
-- setup.py installer.
-- investigate debian package for Ubuntu.
 - investigate javascript library minimizing / obfuscation.
 
 
 Proxy object properties:
 ------------------------
-- create interface table at introspection.
-- create properties at introspection if "org.freedesktop.DBus.Properties" interface available.
+- try to retrieve properties at introspection only if mentioned in xml data.
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
 
+
+Security:
+---------
+- support Challenge Response Authentication

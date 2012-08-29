@@ -80,27 +80,6 @@ cloudeebus.BusConnection = function(name, session) {
 };
 
 
-cloudeebus.BusConnection.prototype.listNames = function(successCB, errorCB) {
-	
-	var self = this; 
-
-	function listNamesSuccessCB(str) {
-		if (successCB)
-			successCB(JSON.parse(str));
-	}
-
-	function listNamesErrorCB(error) {
-		cloudeebus.log("Failed to list names for bus: " + self.name);
-		cloudeebus.log(error.desc);
-		if (errorCB)
-			errorCB(error.desc);
-	}
-
-    // call listNames with bus name
-	self.wampSession.call("listNames", [self.name]).then(listNamesSuccessCB, listNamesErrorCB);
-};
-
-
 cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
 	var proxy = new cloudeebus.ProxyObject(this.wampSession, this, busName, objectPath);
 	if (introspectCB)

@@ -12,17 +12,10 @@ cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
 
-function logBusNames(busNames) {
-  for (var i=0; i<busNames.length; i++) {
-    cloudeebus.log(busNames[i]);
-  }
-}
-
 var proxy, interval;
 
 function connectSuccess() {
   var bus = cloudeebus.SessionBus();
-  bus.listNames(logBusNames);
   handler = bus.getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
   handler.connectToSignal("org.gnome.ScreenSaver", "ActiveChanged", successCB, errorCB);
   proxy = bus.getObject("org.gnome.ScreenSaver", "/", lock, errorCB);

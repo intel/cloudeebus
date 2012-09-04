@@ -205,8 +205,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 	}
 
 	function callMethodErrorCB(error) {
-		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath);
-		cloudeebus.log(error.desc);
+		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
 		if (errorCB)
 			errorCB(error.desc);
 	}
@@ -230,19 +229,21 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 	var self = this; 
 
 	function signalHandler(id, data) {
-		cloudeebus.log("Object: " + self.objectPath + " received signal: " + signal + " id: " + id);
 		if (successCB)
 			successCB.apply(self, JSON.parse(data));		
 	}
 	
 	function connectToSignalSuccessCB(str) {
-		cloudeebus.log("Object: " + self.objectPath + " subscribing to signal: " + str);
-		self.wampSession.subscribe(str, signalHandler);
+		try {
+			self.wampSession.subscribe(str, signalHandler);
+		}
+		catch (e) {
+			cloudeebus.log("Subscribe error: " + e);
+		}
 	}
 
 	function connectToSignalErrorCB(error) {
-		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath);
-		cloudeebus.log(error.desc);
+		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + error.desc);
 		if (errorCB)
 			errorCB(error.desc);
 	}
@@ -261,5 +262,10 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 
 
 cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
-	this.wampSession.unsubscribe(this.busName + "#" + this.objectPath + "#" + ifName + "#" + signal);
+	try {
+		this.wampSession.unsubscribe(this.busName + "#" + this.objectPath + "#" + ifName + "#" + signal);
+	}
+	catch (e) {
+		cloudeebus.log("Unsubscribe error: " + e);
+	}
 };

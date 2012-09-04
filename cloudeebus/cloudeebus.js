@@ -258,3 +258,8 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
     // call dbusSend with bus type, destination, object, message and arguments
     self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
 };
+
+
+cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
+	this.wampSession.unsubscribe(this.busName + "#" + this.objectPath + "#" + ifName + "#" + signal);
+};

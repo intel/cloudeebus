@@ -48,6 +48,17 @@ def hashId(list):
 	return str
 
 
+###############################################################################
+
+# dbus connexions
+dbusConnexions = {}
+# proxy objects
+proxyObjects = {}
+# proxy methods
+proxyMethods = {}
+# signal handlers
+signalHandlers = {}
+
 
 ###############################################################################
 class DbusSignalHandler:
@@ -96,42 +107,34 @@ class DbusCallHandler:
 ###############################################################################
 class CloudeebusService:
 	def __init__(self):
-		# dbus connexions
-		self.dbusConnexions = {}
-		# proxy objects
-		self.proxyObjects = {}
-		# proxy methods
-		self.proxyMethods = {}
-		# signal handlers
-		self.signalHandlers = {}
 		# pending dbus calls
 		self.pendingCalls = []
 
 
 	def dbusConnexion(self, busName):
-		if not self.dbusConnexions.has_key(busName):
+		if not dbusConnexions.has_key(busName):
 			if busName == "session":
-				self.dbusConnexions[busName] = dbus.SessionBus()
+				dbusConnexions[busName] = dbus.SessionBus()
 			elif busName == "system":
-				self.dbusConnexions[busName] = dbus.SystemBus()
+				dbusConnexions[busName] = dbus.SystemBus()
 			else:
 				raise Exception("Error: invalid bus: %s" % busName)
-		return self.dbusConnexions[busName]
+		return dbusConnexions[busName]
 
 
 	def proxyObject(self, bus, serviceName, objectName):
 		id = hashId([serviceName, objectName])
-		if not self.proxyObjects.has_key(id):
-			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
-		return self.proxyObjects[id]
+		if not proxyObjects.has_key(id):
+			proxyObjects[id] = bus.get_object(serviceName, objectName)
+		return proxyObjects[id]
 
 
 	def proxyMethod(self, bus, serviceName, objectName, interfaceName, methodName):
 		id = hashId([serviceName, objectName, interfaceName, methodName])
-		if not self.proxyMethods.has_key(id):
+		if not proxyMethods.has_key(id):
 			obj = self.proxyObject(bus, serviceName, objectName)
-			self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
-		return self.proxyMethods[id]
+			proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
+		return proxyMethods[id]
 
 
 	@exportRpc
@@ -142,7 +145,7 @@ class CloudeebusService:
 		
 		# check if a handler exists
 		sigId = hashId(list[1:5])
-		if self.signalHandlers.has_key(sigId):
+		if signalHandlers.has_key(sigId):
 			return sigId
 		
 		# get dbus connexion
@@ -153,7 +156,7 @@ class CloudeebusService:
 		
 		# create a handler that will publish the signal
 		dbusSignalHandler = DbusSignalHandler(bus, object, *list[1:5])
-		self.signalHandlers[sigId] = dbusSignalHandler
+		signalHandlers[sigId] = dbusSignalHandler
 		
 		return dbusSignalHandler.id
 

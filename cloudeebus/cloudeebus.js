@@ -108,7 +108,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		for (var prop in props)
 			self[prop] = props[prop];
 		if (self.propInterfaces.length > 0) 
-		    self.callMethod("org.freedesktop.DBus.Properties", 
+			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
 				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
@@ -155,7 +155,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			}
 		}
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
-		    self.callMethod("org.freedesktop.DBus.Properties", 
+			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
 				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
@@ -168,8 +168,8 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		}
 	}
 
-    // call Introspect on self
-    self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
+	// call Introspect on self
+	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
 };
 
 
@@ -210,7 +210,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 			errorCB(error.desc);
 	}
 
-    var arglist = [
+	var arglist = [
 		self.busConnection.name,
 		self.busName,
 		self.objectPath,
@@ -219,8 +219,8 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 		JSON.stringify(args)
 	];
 
-    // call dbusSend with bus type, destination, object, message and arguments
-    self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+	// call dbusSend with bus type, destination, object, message and arguments
+	self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
 };
 
 
@@ -248,7 +248,7 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 			errorCB(error.desc);
 	}
 
-    var arglist = [
+	var arglist = [
 		self.busConnection.name,
 		self.busName,
 		self.objectPath,
@@ -256,8 +256,8 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 		signal
 	];
 
-    // call dbusSend with bus type, destination, object, message and arguments
-    self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
+	// call dbusSend with bus type, destination, object, message and arguments
+	self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
 };
 
 

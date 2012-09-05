@@ -13,7 +13,7 @@ The /doc/dbus-tools folder contains a dbus-send and a dbus-register server, with
  * Running a demo: from the project root directory
 
 	python cloudeebus/cloudeebus.py &
-	firefox file://`pwd`/doc/docdbus-tools/dbus-send.html  file://`pwd`/doc/dbus-tools/dbus-register.html &
+	firefox file://`pwd`/doc/dbus-tools/dbus-send.html  file://`pwd`/doc/dbus-tools/dbus-register.html &
 
 
 Acknowledgements

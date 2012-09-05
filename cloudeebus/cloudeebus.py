@@ -54,7 +54,7 @@ class DbusSignalHandler:
 	def __init__(self, bus, object, senderName, objectName, interfaceName, signalName):
 		# publish hash id
 		self.id = hashId([senderName, objectName, interfaceName, signalName])
-        # connect dbus proxy object to signal
+		# connect dbus proxy object to signal
 		object.connect_to_signal(signalName, self.handleSignal, interfaceName)
 
 
@@ -66,7 +66,7 @@ class DbusSignalHandler:
 ###############################################################################
 class DbusCallHandler:
 	def __init__(self, method, args):
-        # deferred reply to return dbus results
+		# deferred reply to return dbus results
 		self.pending = False
 		self.request = defer.Deferred()
 		self.method = method
@@ -95,95 +95,95 @@ class DbusCallHandler:
 
 ###############################################################################
 class CloudeebusService:
-    def __init__(self):
-        # dbus connexions
-	self.dbusConnexions = {}
-        # proxy objects
-        self.proxyObjects = {}
-        # proxy methods
-        self.proxyMethods = {}
-	# signal handlers
-	self.signalHandlers = {}
-        # pending dbus calls
-        self.pendingCalls = []
+	def __init__(self):
+		# dbus connexions
+		self.dbusConnexions = {}
+		# proxy objects
+		self.proxyObjects = {}
+		# proxy methods
+		self.proxyMethods = {}
+		# signal handlers
+		self.signalHandlers = {}
+		# pending dbus calls
+		self.pendingCalls = []
 
 
-    def dbusConnexion(self, busName):
-	if not self.dbusConnexions.has_key(busName):
-		if busName == "session":
-			self.dbusConnexions[busName] = dbus.SessionBus()
-		elif busName == "system":
-			self.dbusConnexions[busName] = dbus.SystemBus()
-		else:
-			raise Exception("Error: invalid bus: %s" % busName)
-	return self.dbusConnexions[busName]
+	def dbusConnexion(self, busName):
+		if not self.dbusConnexions.has_key(busName):
+			if busName == "session":
+				self.dbusConnexions[busName] = dbus.SessionBus()
+			elif busName == "system":
+				self.dbusConnexions[busName] = dbus.SystemBus()
+			else:
+				raise Exception("Error: invalid bus: %s" % busName)
+		return self.dbusConnexions[busName]
 
 
-    def proxyObject(self, bus, serviceName, objectName):
-	id = hashId([serviceName, objectName])
-	if not self.proxyObjects.has_key(id):
-		self.proxyObjects[id] = bus.get_object(serviceName, objectName)
-	return self.proxyObjects[id]
+	def proxyObject(self, bus, serviceName, objectName):
+		id = hashId([serviceName, objectName])
+		if not self.proxyObjects.has_key(id):
+			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
+		return self.proxyObjects[id]
 
 
-    def proxyMethod(self, bus, serviceName, objectName, interfaceName, methodName):
-	id = hashId([serviceName, objectName, interfaceName, methodName])
-	if not self.proxyMethods.has_key(id):
-		obj = self.proxyObject(bus, serviceName, objectName)
-		self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
-	return self.proxyMethods[id]
+	def proxyMethod(self, bus, serviceName, objectName, interfaceName, methodName):
+		id = hashId([serviceName, objectName, interfaceName, methodName])
+		if not self.proxyMethods.has_key(id):
+			obj = self.proxyObject(bus, serviceName, objectName)
+			self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
+		return self.proxyMethods[id]
 
 
-    @exportRpc
-    def dbusRegister(self, list):
-	# read arguments list by position
-        if len(list) < 5:
-		raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
+	@exportRpc
+	def dbusRegister(self, list):
+		# read arguments list by position
+		if len(list) < 5:
+			raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
+		
+		# check if a handler exists
+		sigId = hashId(list[1:5])
+		if self.signalHandlers.has_key(sigId):
+			return sigId
+		
+		# get dbus connexion
+		bus = self.dbusConnexion(list[0])
+		
+		# get dbus proxy
+		object = self.proxyObject(bus, list[1], list[2])
+		
+		# create a handler that will publish the signal
+		dbusSignalHandler = DbusSignalHandler(bus, object, *list[1:5])
+		self.signalHandlers[sigId] = dbusSignalHandler
+		
+		return dbusSignalHandler.id
 
-	# check if a handler exists
-        sigId = hashId(list[1:5])
-        if self.signalHandlers.has_key(sigId):
-		return sigId
 
-        # get dbus connexion
-        bus = self.dbusConnexion(list[0])
-
-        # get dbus proxy
-        object = self.proxyObject(bus, list[1], list[2])
-
-        # create a handler that will publish the signal
-        dbusSignalHandler = DbusSignalHandler(bus, object, *list[1:5])
-        self.signalHandlers[sigId] = dbusSignalHandler
-
-        return dbusSignalHandler.id
-
-
-    @exportRpc
-    def dbusSend(self, list):
-	# clear pending calls
-	for call in self.pendingCalls:
-		if not call.pending:
-			self.pendingCalls.remove(call)
-
-	# read arguments list by position
-        if len(list) < 5:
-		raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
-
-        # get dbus connexion
-        bus = self.dbusConnexion(list[0])
-
-        # parse JSON arg list
-        args = []
-        if len(list) == 6:
-		args = json.loads(list[5])
-
-        # get dbus proxy
-        method = self.proxyMethod(bus, *list[1:5])
-
-        # use a deferred call handler to manage dbus results
-        dbusCallHandler = DbusCallHandler(method, args)
-        self.pendingCalls.append(dbusCallHandler)
-        return dbusCallHandler.callMethod()
+	@exportRpc
+	def dbusSend(self, list):
+		# clear pending calls
+		for call in self.pendingCalls:
+			if not call.pending:
+				self.pendingCalls.remove(call)
+		
+		# read arguments list by position
+		if len(list) < 5:
+			raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
+		
+		# get dbus connexion
+		bus = self.dbusConnexion(list[0])
+		
+		# parse JSON arg list
+		args = []
+		if len(list) == 6:
+			args = json.loads(list[5])
+		
+		# get dbus proxy
+		method = self.proxyMethod(bus, *list[1:5])
+		
+		# use a deferred call handler to manage dbus results
+		dbusCallHandler = DbusCallHandler(method, args)
+		self.pendingCalls.append(dbusCallHandler)
+		return dbusCallHandler.callMethod()
 
 
 

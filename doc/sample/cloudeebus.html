@@ -3,6 +3,29 @@
     <head>
         <script src="../../lib/autobahn.min.js"></script>
         <script src="../../cloudeebus/cloudeebus.js"></script>
+        <script type="text/javascript">
+		var manifest = {
+			name: "cloudeebus",
+			version: "v0.0 / development",
+			key: "secret",
+			permissions: [
+				"com.intel.media-service-upnp",
+				"com.intel.renderer-service-upnp",
+				"org.freedesktop.DBus",
+				"org.freedesktop.DisplayManager",
+				"org.freedesktop.FileManager1",
+				"org.freedesktop.ModemManager",
+				"org.freedesktop.NetworkManager",
+				"org.freedesktop.Notifications",
+				"org.freedesktop.Tracker1",
+				"org.gnome.Nautilus",
+				"org.gnome.Rygel1",
+				"org.gnome.ScreenSaver",
+				"org.neard",
+				"org.ofono"
+			]
+		};
+        </script>
     </head>
    <body>
         <center><h1>cloudeebus</h1></center>
@@ -42,7 +65,7 @@ function errorCB(error) {
   cloudeebus.log("error: " + error + "\n");
 }
 
-cloudeebus.connect("ws://localhost:9000", connectSuccess, errorCB);
+cloudeebus.connect("ws://localhost:9000", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
 		<input type="button" value="run script" onclick="eval(document.getElementById('script').value)"/>

@@ -30,7 +30,7 @@ glib2reactor.install()
 from twisted.internet import reactor, defer
 
 from autobahn.websocket import listenWS
-from autobahn.wamp import exportRpc, WampServerFactory, WampServerProtocol
+from autobahn.wamp import exportRpc, WampServerFactory, WampCraServerProtocol
 
 from dbus.mainloop.glib import DBusGMainLoop
 
@@ -204,18 +204,63 @@ class CloudeebusService:
 
 
 ###############################################################################
-class CloudeebusServerProtocol(WampServerProtocol):
+class CloudeebusServerProtocol(WampCraServerProtocol):
+	
+	PASSWD = {
+		"cloudeebus": "secret"
+		}
+	
+	WHITELIST = [
+		"com.intel.media-service-upnp",
+		"com.intel.renderer-service-upnp",
+		"org.freedesktop.DBus",
+		"org.freedesktop.DisplayManager",
+		"org.freedesktop.FileManager1",
+		"org.freedesktop.ModemManager",
+		"org.freedesktop.NetworkManager",
+		"org.freedesktop.Notifications",
+		"org.freedesktop.Tracker1",
+		"org.gnome.Nautilus",
+		"org.gnome.Rygel1",
+		"org.gnome.ScreenSaver",
+		"org.neard",
+		"org.ofono"
+		]
+	
+
 	def onSessionOpen(self):
+		# CRA authentication options
+		self.clientAuthTimeout = 0
+		self.clientAuthAllowAnonymous = True
+		# CRA authentication init
+		WampCraServerProtocol.onSessionOpen(self)
+	
+	
+	def getAuthPermissions(self, key, extra):
+		return json.loads(extra.get("permissions", "[]"))
+	
+	
+	def getAuthSecret(self, key):
+		return self.PASSWD.get(key, None)
+	
+
+	def onAuthenticated(self, key, permissions):
+		# check authentication key
+		if key is None:
+			raise Exception("Authentication failed")
+		# check permissions, array.index throws exception
+		for req in permissions:
+			self.WHITELIST.index(req)
 		# create cloudeebus service instance
 		self.cloudeebusService = CloudeebusService()
 		# register it for RPC
 		self.registerForRpc(self.cloudeebusService)
 		# register for Publish / Subscribe
 		self.registerForPubSub("", True)
-
-		
+	
+	
 	def connectionLost(self, reason):
-		WampServerProtocol.connectionLost(self, reason)
+		WampCraServerProtocol.connectionLost(self, reason)
 		if factory.getConnectionCount() == 0:
 			cache.reset()
 
@@ -228,15 +273,15 @@ if __name__ == '__main__':
 	port = "9000"
 	if len(sys.argv) == 2:
 		port = sys.argv[1]
-
+	
 	uri = "ws://localhost:" + port
-
+	
 	factory = WampServerFactory(uri, debugWamp = True)
 	factory.protocol = CloudeebusServerProtocol
 	factory.setProtocolOptions(allowHixie76 = True)
-
+	
 	listenWS(factory)
-
+	
 	DBusGMainLoop(set_as_default=True)
-
+	
 	reactor.run()

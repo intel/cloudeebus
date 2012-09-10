@@ -127,7 +127,8 @@ class DbusCallHandler:
 
 ###############################################################################
 class CloudeebusService:
-	def __init__(self):
+	def __init__(self, permissions):
+		self.permissions = permissions;
 		# proxy objects
 		self.proxyObjects = {}
 		# proxy methods
@@ -139,6 +140,8 @@ class CloudeebusService:
 	def proxyObject(self, busName, serviceName, objectName):
 		id = hashId([serviceName, objectName])
 		if not self.proxyObjects.has_key(id):
+			# check permissions, array.index throws exception
+			self.permissions.index(serviceName)
 			bus = cache.dbusConnexion(busName)
 			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
 		return self.proxyObjects[id]
@@ -248,7 +251,7 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
 		for req in permissions:
 			self.WHITELIST.index(req)
 		# create cloudeebus service instance
-		self.cloudeebusService = CloudeebusService()
+		self.cloudeebusService = CloudeebusService(permissions)
 		# register it for RPC
 		self.registerForRpc(self.cloudeebusService)
 		# register for Publish / Subscribe

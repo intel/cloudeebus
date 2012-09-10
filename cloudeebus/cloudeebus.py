@@ -63,10 +63,6 @@ class DbusCache:
 	def reset(self):
 		# dbus connexions
 		self.dbusConnexions = {}
-		# proxy objects
-		self.proxyObjects = {}
-		# proxy methods
-		self.proxyMethods = {}
 		# signal handlers
 		self.signalHandlers = {}
 
@@ -82,29 +78,15 @@ class DbusCache:
 		return self.dbusConnexions[busName]
 
 
-	def proxyObject(self, bus, serviceName, objectName):
-		id = hashId([serviceName, objectName])
-		if not self.proxyObjects.has_key(id):
-			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
-		return self.proxyObjects[id]
-
-
-	def proxyMethod(self, bus, serviceName, objectName, interfaceName, methodName):
-		id = hashId([serviceName, objectName, interfaceName, methodName])
-		if not self.proxyMethods.has_key(id):
-			obj = self.proxyObject(bus, serviceName, objectName)
-			self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
-		return self.proxyMethods[id]
-
-
 
 ###############################################################################
 class DbusSignalHandler:
-	def __init__(self, bus, object, senderName, objectName, interfaceName, signalName):
+	def __init__(self, object, senderName, objectName, interfaceName, signalName):
 		# publish hash id
 		self.id = hashId([senderName, objectName, interfaceName, signalName])
 		# connect dbus proxy object to signal
-		object.connect_to_signal(signalName, self.handleSignal, interfaceName)
+		self.proxyObject = object
+		self.proxyObject.connect_to_signal(signalName, self.handleSignal, interfaceName)
 
 
 	def handleSignal(self, *args):
@@ -146,8 +128,28 @@ class DbusCallHandler:
 ###############################################################################
 class CloudeebusService:
 	def __init__(self):
+		# proxy objects
+		self.proxyObjects = {}
+		# proxy methods
+		self.proxyMethods = {}
 		# pending dbus calls
 		self.pendingCalls = []
+
+
+	def proxyObject(self, busName, serviceName, objectName):
+		id = hashId([serviceName, objectName])
+		if not self.proxyObjects.has_key(id):
+			bus = cache.dbusConnexion(busName)
+			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
+		return self.proxyObjects[id]
+
+
+	def proxyMethod(self, busName, serviceName, objectName, interfaceName, methodName):
+		id = hashId([serviceName, objectName, interfaceName, methodName])
+		if not self.proxyMethods.has_key(id):
+			obj = self.proxyObject(busName, serviceName, objectName)
+			self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
+		return self.proxyMethods[id]
 
 
 	@exportRpc
@@ -161,14 +163,11 @@ class CloudeebusService:
 		if cache.signalHandlers.has_key(sigId):
 			return sigId
 		
-		# get dbus connexion
-		bus = cache.dbusConnexion(list[0])
-		
-		# get dbus proxy
-		object = cache.proxyObject(bus, list[1], list[2])
+		# get dbus proxy object
+		object = self.proxyObject(list[0], list[1], list[2])
 		
 		# create a handler that will publish the signal
-		dbusSignalHandler = DbusSignalHandler(bus, object, *list[1:5])
+		dbusSignalHandler = DbusSignalHandler(object, *list[1:5])
 		cache.signalHandlers[sigId] = dbusSignalHandler
 		
 		return dbusSignalHandler.id
@@ -185,16 +184,13 @@ class CloudeebusService:
 		if len(list) < 5:
 			raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
 		
-		# get dbus connexion
-		bus = cache.dbusConnexion(list[0])
-		
 		# parse JSON arg list
 		args = []
 		if len(list) == 6:
 			args = json.loads(list[5])
 		
-		# get dbus proxy
-		method = cache.proxyMethod(bus, *list[1:5])
+		# get dbus proxy method
+		method = self.proxyMethod(list[0], *list[1:5])
 		
 		# use a deferred call handler to manage dbus results
 		dbusCallHandler = DbusCallHandler(method, args)

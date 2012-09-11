@@ -4,29 +4,6 @@
 		<!-- include AutobahnJS .. that's all you need -->
 		<script src="../../lib/autobahn.min.js"></script>
 		<script language="javascript" type="text/javascript">
-		
-		var manifest = {
-			name: "cloudeebus",
-			version: "v0.0 / development",
-			key: "secret",
-			permissions: [
-				"com.intel.media-service-upnp",
-				"com.intel.renderer-service-upnp",
-				"org.freedesktop.DBus",
-				"org.freedesktop.DisplayManager",
-				"org.freedesktop.FileManager1",
-				"org.freedesktop.ModemManager",
-				"org.freedesktop.NetworkManager",
-				"org.freedesktop.Notifications",
-				"org.freedesktop.Tracker1",
-				"org.gnome.Nautilus",
-				"org.gnome.Rygel1",
-				"org.gnome.ScreenSaver",
-				"org.neard",
-				"org.ofono"
-			]
-		};
-		
 		// WAMP session object
 		var mSession = null;
 
@@ -35,22 +12,15 @@
 
 		window.onload = function() {
 
-			function onSessionAuthenticatedCB(permissions) {
-				log_append("Session successfully authenticated.");
+			function onSessionAuthenticatedCB() { // WAMP session was authenticated
+				log_append("Session successfully connected.");
 			}
 
-			function onSessionChallengedCB(challenge) {
-				var signature = mSession.authsign(challenge, manifest.key);
-				mSession.auth(signature).then(onSessionAuthenticatedCB, log_append);
-			}
-	
 			function onSessionConnectedCB(session) { // WAMP session was established
 				mSession = session;
-				log_append("Session connected, authenticating.");
-				mSession.authreq(
-						manifest.name,
-						{permissions: JSON.stringify(manifest.permissions)}
-					).then(onSessionChallengedCB, log_append);
+				mSession.authreq().then(function() {
+					mSession.auth().then(onSessionAuthenticatedCB, log_append);
+				}, log_append);
 			}
 
 			function onSessionErrorCB(code, reason) { // WAMP session is gone

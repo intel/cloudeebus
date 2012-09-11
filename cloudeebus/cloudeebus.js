@@ -37,7 +37,7 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 	cloudeebus.uri = uri;
 	
 	function onWAMPSessionAuthenticatedCB(permissions) {
-		cloudeebus.log("Connected as " + manifest.name + " to " + cloudeebus.uri);
+		cloudeebus.log("Connected to " + cloudeebus.uri);
 		cloudeebus.sessionBus = new cloudeebus.BusConnection("session", cloudeebus.wampSession);
 		cloudeebus.systemBus = new cloudeebus.BusConnection("system", cloudeebus.wampSession);
 		if (successCB)
@@ -51,10 +51,15 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 	
 	function onWAMPSessionConnectedCB(session) {
 		cloudeebus.wampSession = session;
-		cloudeebus.wampSession.authreq(
-				manifest.name, 
-				{permissions: JSON.stringify(manifest.permissions)}
-			).then(onWAMPSessionChallengedCB, errorCB);
+		if (manifest)
+			cloudeebus.wampSession.authreq(
+					manifest.name, 
+					{permissions: JSON.stringify(manifest.permissions)}
+				).then(onWAMPSessionChallengedCB, errorCB);
+		else
+			cloudeebus.wampSession.authreq().then(function() {
+				cloudeebus.wampSession.auth().then(onWAMPSessionAuthenticatedCB, errorCB);
+				}, errorCB);
 	}
 
 	function onWAMPSessionErrorCB(code, reason) {

@@ -21,7 +21,7 @@
 #
 
 
-import sys, dbus, json
+import argparse, dbus, io, json, sys
 
 from twisted.internet import glib2reactor
 # Configure the twisted mainloop to be run inside the glib mainloop.
@@ -42,17 +42,22 @@ glib.init_threads()
 
 # enable debug log
 from twisted.python import log
-log.startLogging(sys.stdout)
 
 
 
 ###############################################################################
+
+OPENDOOR = False
+CREDENTIALS = {}
+WHITELIST = []
+
+###############################################################################
+
 def hashId(list):
 	str = list[0]
 	for item in list[1:len(list)]:
 		str += "#" + item
 	return str
-
 
 ###############################################################################
 class DbusCache:
@@ -140,8 +145,9 @@ class CloudeebusService:
 	def proxyObject(self, busName, serviceName, objectName):
 		id = hashId([serviceName, objectName])
 		if not self.proxyObjects.has_key(id):
-			# check permissions, array.index throws exception
-			self.permissions.index(serviceName)
+			if not OPENDOOR:
+				# check permissions, array.index throws exception
+				self.permissions.index(serviceName)
 			bus = cache.dbusConnexion(busName)
 			self.proxyObjects[id] = bus.get_object(serviceName, objectName)
 		return self.proxyObjects[id]
@@ -205,32 +211,10 @@ class CloudeebusService:
 ###############################################################################
 class CloudeebusServerProtocol(WampCraServerProtocol):
 	
-	PASSWD = {
-		"cloudeebus": "secret"
-		}
-	
-	WHITELIST = [
-		"com.intel.media-service-upnp",
-		"com.intel.renderer-service-upnp",
-		"org.freedesktop.DBus",
-		"org.freedesktop.DisplayManager",
-		"org.freedesktop.FileManager1",
-		"org.freedesktop.ModemManager",
-		"org.freedesktop.NetworkManager",
-		"org.freedesktop.Notifications",
-		"org.freedesktop.Tracker1",
-		"org.gnome.Nautilus",
-		"org.gnome.Rygel1",
-		"org.gnome.ScreenSaver",
-		"org.neard",
-		"org.ofono"
-		]
-	
-
 	def onSessionOpen(self):
 		# CRA authentication options
 		self.clientAuthTimeout = 0
-		self.clientAuthAllowAnonymous = True
+		self.clientAuthAllowAnonymous = OPENDOOR
 		# CRA authentication init
 		WampCraServerProtocol.onSessionOpen(self)
 	
@@ -240,16 +224,21 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
 	
 	
 	def getAuthSecret(self, key):
-		return self.PASSWD.get(key, None)
+		secret = CREDENTIALS.get(key, None)
+		if secret is None:
+			return None
+		# secret must be of str type to be hashed
+		return secret.encode('utf-8')
 	
 
 	def onAuthenticated(self, key, permissions):
-		# check authentication key
-		if key is None:
-			raise Exception("Authentication failed")
-		# check permissions, array.index throws exception
-		for req in permissions:
-			self.WHITELIST.index(req)
+		if not OPENDOOR:
+			# check authentication key
+			if key is None:
+				raise Exception("Authentication failed")
+			# check permissions, array.index throws exception
+			for req in permissions:
+				WHITELIST.index(req)
 		# create cloudeebus service instance
 		self.cloudeebusService = CloudeebusService(permissions)
 		# register it for RPC
@@ -266,16 +255,38 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
 
 
 ###############################################################################
+
 if __name__ == '__main__':
+	
 	cache = DbusCache()
+
+	parser = argparse.ArgumentParser(description='Javascript DBus bridge.')
+	parser.add_argument('-d', '--debug', action='store_true')
+	parser.add_argument('-o', '--opendoor', action='store_true')
+	parser.add_argument('-p', '--port', default='9000')
+	parser.add_argument('-c', '--credentials')
+	parser.add_argument('-w', '--whitelist')
 	
-	port = "9000"
-	if len(sys.argv) == 2:
-		port = sys.argv[1]
+	args = parser.parse_args(sys.argv[1:])
+
+	if args.debug:
+		log.startLogging(sys.stdout)
 	
-	uri = "ws://localhost:" + port
+	OPENDOOR = args.opendoor
 	
-	factory = WampServerFactory(uri, debugWamp = True)
+	if args.credentials:
+		jfile = open(args.credentials)
+		CREDENTIALS = json.load(jfile)
+		jfile.close()
+	
+	if args.whitelist:
+		jfile = open(args.whitelist)
+		WHITELIST = json.load(jfile)
+		jfile.close()
+	
+	uri = "ws://localhost:" + args.port
+	
+	factory = WampServerFactory(uri, debugWamp = args.debug)
 	factory.protocol = CloudeebusServerProtocol
 	factory.setProtocolOptions(allowHixie76 = True)
 	

@@ -1,4 +1,7 @@
-###############################################################################
+#!/usr/bin/env python
+
+# Cloudeebus
+#
 # Copyright 2012 Intel Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +15,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-###############################################################################
+#
+# Luc Yriarte <luc.yriarte@intel.com>
+# Christophe Guiraud <christophe.guiraud@intel.com>
+#
 
 
 import sys, dbus, json

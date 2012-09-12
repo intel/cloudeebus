@@ -261,11 +261,16 @@ if __name__ == '__main__':
 	cache = DbusCache()
 
 	parser = argparse.ArgumentParser(description='Javascript DBus bridge.')
-	parser.add_argument('-d', '--debug', action='store_true')
-	parser.add_argument('-o', '--opendoor', action='store_true')
-	parser.add_argument('-p', '--port', default='9000')
-	parser.add_argument('-c', '--credentials')
-	parser.add_argument('-w', '--whitelist')
+	parser.add_argument('-d', '--debug', action='store_true', 
+		help='log debug info on standard output')
+	parser.add_argument('-o', '--opendoor', action='store_true',
+		help='allow anonymous access to all services')
+	parser.add_argument('-p', '--port', default='9000',
+		help='port number')
+	parser.add_argument('-c', '--credentials',
+		help='path to credentials file')
+	parser.add_argument('-w', '--whitelist',
+		help='path to whitelist file')
 	
 	args = parser.parse_args(sys.argv[1:])
 

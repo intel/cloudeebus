@@ -1,12 +1,10 @@
-Session disconnect:
--------------------
-- gracefully handle session disconnect
-- investigate disconnect / cleanup API
+Errors / Exceptions:
+--------------------
+- Return exception message string instead of exception object
 
 
 Object / method cache:
 ----------------------
-- design cache cleanup mechanism, periodic or on demand.
 - optimize cache if needed.
 - investigate Javascript object destructor callbacks.
 
@@ -23,4 +21,5 @@ Proxy object properties:
 
 Security:
 ---------
-- support Challenge Response Authentication
+- manage signal subscription according to manifest locally per connexion
+

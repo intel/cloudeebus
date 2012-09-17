@@ -23,7 +23,7 @@
 from setuptools import setup
 
 setup(name = "cloudeebus",
-	version = "0.0.1",
+	version = "0.1",
 	description = "Javascript-DBus bridge",
 	author = "Luc Yriarte, Christophe Guiraud",
 	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com",

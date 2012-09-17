@@ -1,14 +1,3 @@
-Errors / Exceptions:
---------------------
-- Return exception message string instead of exception object
-
-
-Object / method cache:
-----------------------
-- optimize cache if needed.
-- investigate Javascript object destructor callbacks.
-
-
 Distribution:
 -------------
 - investigate javascript library minimizing / obfuscation.

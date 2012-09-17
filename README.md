@@ -9,7 +9,7 @@ Cloudeebus - DBus for the Cloud - is a component which enables calling DBus
 Install
 -------
 
-  * Installing Cloudeebus from the project root directory:
+### Installing Cloudeebus from the project root directory:
 
 Cloudeebus will install itself in Python's dist-packages folder. The
  cloudeebus.py wrapper shell goes in the executables path.
@@ -17,7 +17,7 @@ Cloudeebus will install itself in Python's dist-packages folder. The
 	sudo python setup.py install
 
 
-  * Running Cloudeebus:
+### Running Cloudeebus:
 
 The Cloudeebus server must be run either with credentials and a whitelist to
  restrict access to DBus services, or in opendoor mode.
@@ -40,16 +40,17 @@ The Cloudeebus server must be run either with credentials and a whitelist to
 Examples
 --------
 
-  * The /doc/dbus-tools folder contains dbus-send and dbus-register test pages.
+### dbus-tools
 
+The /doc/dbus-tools folder contains dbus-send and dbus-register test pages.
 Cloudeebus runs in opendoor mode, the dbus-tools pages have no manifest.
 
 	cloudeebus.py --debug --opendoor &
 	firefox ./doc/dbus-tools/dbus-register.html ./doc/dbus-tools/dbus-send.html &
 
-  * The /doc/sample folder contains a working sample using credentials, whitelist
-   and manifest.
+### sample
 
+The /doc/sample folder contains a working sample using credentials, whitelist and manifest.
 Cloudeebus runs with credentials and a whitelist that are matched by the
  sample page manifest.
 

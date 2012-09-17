@@ -10,6 +10,17 @@
 		// HTML DOM elements
 		var mLog, mBus, mDestination, mObject, mInterface, mMessage, mArgs, mUri;
 
+		// RPC success callback
+		function myAsyncFuncSuccessCB(res) {
+			log_append("got result: " + res + "\n");
+		}
+
+		// RPC error callback
+		function myAsyncFuncErrorCB(error, desc) {
+			var str = error.desc ? error.desc : desc;
+			log_append("error: " + str + "\n");
+		}
+
 		window.onload = function() {
 
 			function onSessionAuthenticatedCB() { // WAMP session was authenticated
@@ -19,8 +30,8 @@
 			function onSessionConnectedCB(session) { // WAMP session was established
 				mSession = session;
 				mSession.authreq().then(function() {
-					mSession.auth().then(onSessionAuthenticatedCB, log_append);
-				}, log_append);
+					mSession.auth().then(onSessionAuthenticatedCB, myAsyncFuncErrorCB);
+				}, myAsyncFuncErrorCB);
 			}
 
 			function onSessionErrorCB(code, reason) { // WAMP session is gone
@@ -47,16 +58,6 @@
 
 		function dbus_send()
 		{
-			// RPC success callback
-			function myAsyncFuncSuccessCB(res) {
-				log_append("got result: " + res + "\n");
-			}
-
-			// RPC error callback
-			function myAsyncFuncErrorCB(error, desc) {
-				log_append("error: " + desc + "\n");
-			}
-
 			log_append("dbusSend: "
 				+ mBus.options[mBus.selectedIndex].value + "\n\t"
 				+ mDestination.value + "\n\t"

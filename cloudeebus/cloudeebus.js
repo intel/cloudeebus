@@ -223,8 +223,16 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 	var self = this; 
 
 	function callMethodSuccessCB(str) {
-		if (successCB)
-			successCB.apply(self, JSON.parse(str));
+		if (successCB) {
+			try {
+				successCB.apply(self, JSON.parse(str));
+			}
+			catch (e) {
+				cloudeebus.log("Method callback exception: " + e);
+				if (errorCB)
+					errorCB(e);
+			}
+		}
 	}
 
 	function callMethodErrorCB(error) {
@@ -252,8 +260,16 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 	var self = this; 
 
 	function signalHandler(id, data) {
-		if (successCB)
-			successCB.apply(self, JSON.parse(data));		
+		if (successCB) {
+			try {
+				successCB.apply(self, JSON.parse(data));
+			}
+			catch (e) {
+				cloudeebus.log("Signal handler exception: " + e);
+				if (errorCB)
+					errorCB(e);
+			}
+		}
 	}
 	
 	function connectToSignalSuccessCB(str) {

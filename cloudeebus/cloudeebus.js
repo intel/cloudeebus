@@ -18,6 +18,16 @@
 
 /*****************************************************************************/
 
+var dbus = { // hook object for dbus types not translated by python-json
+		Double: function(value, level) {
+			return value;
+		}
+};
+
+
+
+/*****************************************************************************/
+
 var cloudeebus = window.cloudeebus = {};
 
 cloudeebus.reset = function() {
@@ -224,8 +234,8 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 
 	function callMethodSuccessCB(str) {
 		if (successCB) {
-			try {
-				successCB.apply(self, JSON.parse(str));
+			try { // calling dbus hook object function for un-translated types
+				successCB.apply(self, eval(str));
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
@@ -261,8 +271,8 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, succ
 
 	function signalHandler(id, data) {
 		if (successCB) {
-			try {
-				successCB.apply(self, JSON.parse(data));
+			try { // calling dbus hook object function for un-translated types
+				successCB.apply(self, eval(data));
 			}
 			catch (e) {
 				cloudeebus.log("Signal handler exception: " + e);

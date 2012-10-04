@@ -63,5 +63,5 @@ Acknowledgements
 
 Cloudeebus uses code from the following open-source projects:
 
-  * [AutobahnJS](http://autobahn.ws/js)
-  * [AutobahnPython](http://autobahn.ws/python)
+  * [AutobahnJS](http://autobahn.ws/js) ([MIT](http://opensource.org/licenses/MIT) License)
+  * [AutobahnPython](http://autobahn.ws/python) ([Apache 2.0](http://opensource.org/licenses/Apache-2.0) License)

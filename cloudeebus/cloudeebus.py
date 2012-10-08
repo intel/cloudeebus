@@ -62,13 +62,15 @@ def hashId(list):
 ###############################################################################
 class DbusCache:
 	def __init__(self):
-		self.reset()
+		self.dbusConnexions = {}
+		self.signalHandlers = {}
 
 
 	def reset(self):
-		# dbus connexions
 		self.dbusConnexions = {}
-		# signal handlers
+		# disconnect signal handlers
+		for key in self.signalHandlers:
+			self.signalHandlers[key].disconnect()
 		self.signalHandlers = {}
 
 
@@ -86,12 +88,17 @@ class DbusCache:
 
 ###############################################################################
 class DbusSignalHandler:
-	def __init__(self, object, senderName, objectName, interfaceName, signalName):
+	def __init__(self, busName, senderName, objectName, interfaceName, signalName):
 		# publish hash id
 		self.id = hashId([senderName, objectName, interfaceName, signalName])
-		# connect dbus proxy object to signal
-		self.proxyObject = object
-		self.proxyObject.connect_to_signal(signalName, self.handleSignal, interfaceName)
+		# connect handler to signal
+		self.bus = cache.dbusConnexion(busName)
+		self.bus.add_signal_receiver(self.handleSignal, signalName, interfaceName, senderName, objectName)
+		
+	
+	def disconnect(self):
+		names = self.id.split("#")
+		self.bus.remove_signal_receiver(self.handleSignal, names[3], names[2], names[0], names[1])
 
 
 	def handleSignal(self, *args):
@@ -167,16 +174,17 @@ class CloudeebusService:
 		if len(list) < 5:
 			raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
 		
+		if not OPENDOOR:
+			# check permissions, array.index throws exception
+			self.permissions.index(list[1])
+		
 		# check if a handler exists
 		sigId = hashId(list[1:5])
 		if cache.signalHandlers.has_key(sigId):
 			return sigId
 		
-		# get dbus proxy object
-		object = self.proxyObject(list[0], list[1], list[2])
-		
 		# create a handler that will publish the signal
-		dbusSignalHandler = DbusSignalHandler(object, *list[1:5])
+		dbusSignalHandler = DbusSignalHandler(list[0], *list[1:5])
 		cache.signalHandlers[sigId] = dbusSignalHandler
 		
 		return dbusSignalHandler.id

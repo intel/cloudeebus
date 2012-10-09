@@ -184,7 +184,7 @@ class CloudeebusService:
 			return sigId
 		
 		# create a handler that will publish the signal
-		dbusSignalHandler = DbusSignalHandler(list[0], *list[1:5])
+		dbusSignalHandler = DbusSignalHandler(*list[0:5])
 		cache.signalHandlers[sigId] = dbusSignalHandler
 		
 		return dbusSignalHandler.id
@@ -207,7 +207,7 @@ class CloudeebusService:
 			args = json.loads(list[5])
 		
 		# get dbus proxy method
-		method = self.proxyMethod(list[0], *list[1:5])
+		method = self.proxyMethod(*list[0:5])
 		
 		# use a deferred call handler to manage dbus results
 		dbusCallHandler = DbusCallHandler(method, args)

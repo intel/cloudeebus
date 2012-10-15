@@ -52,14 +52,6 @@ CREDENTIALS = {}
 WHITELIST = []
 
 ###############################################################################
-
-def hashId(list):
-	str = list[0]
-	for item in list[1:len(list)]:
-		str += "#" + item
-	return str
-
-###############################################################################
 class DbusCache:
 	def __init__(self):
 		self.dbusConnexions = {}
@@ -90,7 +82,7 @@ class DbusCache:
 class DbusSignalHandler:
 	def __init__(self, busName, senderName, objectName, interfaceName, signalName):
 		# publish hash id
-		self.id = hashId([senderName, objectName, interfaceName, signalName])
+		self.id = "#".join([senderName, objectName, interfaceName, signalName])
 		# connect handler to signal
 		self.bus = cache.dbusConnexion(busName)
 		self.bus.add_signal_receiver(self.handleSignal, signalName, interfaceName, senderName, objectName)
@@ -150,7 +142,7 @@ class CloudeebusService:
 
 
 	def proxyObject(self, busName, serviceName, objectName):
-		id = hashId([serviceName, objectName])
+		id = "#".join([serviceName, objectName])
 		if not self.proxyObjects.has_key(id):
 			if not OPENDOOR:
 				# check permissions, array.index throws exception
@@ -161,7 +153,7 @@ class CloudeebusService:
 
 
 	def proxyMethod(self, busName, serviceName, objectName, interfaceName, methodName):
-		id = hashId([serviceName, objectName, interfaceName, methodName])
+		id = "#".join([serviceName, objectName, interfaceName, methodName])
 		if not self.proxyMethods.has_key(id):
 			obj = self.proxyObject(busName, serviceName, objectName)
 			self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
@@ -179,7 +171,7 @@ class CloudeebusService:
 			self.permissions.index(list[1])
 		
 		# check if a handler exists
-		sigId = hashId(list[1:5])
+		sigId = "#".join(list[1:5])
 		if cache.signalHandlers.has_key(sigId):
 			return sigId
 		

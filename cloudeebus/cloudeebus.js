@@ -140,12 +140,16 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	function getAllPropertiesSuccessCB(props) {
 		for (var prop in props)
 			self[prop] = props[prop];
+		getAllPropertiesNextInterfaceCB();
+	}
+	
+	function getAllPropertiesNextInterfaceCB() {
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
 				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
-				errorCB);
+				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
 			self.propInterfaces = null;
 			if (successCB)
@@ -192,7 +196,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 				"GetAll", 
 				[self.propInterfaces.pop()], 
 				getAllPropertiesSuccessCB, 
-				errorCB);
+				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}
 		else {
 			self.propInterfaces = null;

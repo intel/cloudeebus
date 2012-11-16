@@ -2,3 +2,5 @@
 build
 dist
 cloudeebus.egg-info
+.project
+.pydevproject

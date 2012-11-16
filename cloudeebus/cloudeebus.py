@@ -21,7 +21,7 @@
 #
 
 
-import argparse, dbus, io, json, sys
+import argparse, dbus, json, sys
 
 from twisted.internet import glib2reactor
 # Configure the twisted mainloop to be run inside the glib mainloop.
@@ -53,12 +53,18 @@ WHITELIST = []
 
 ###############################################################################
 class DbusCache:
+    '''
+    Global cache of DBus connexions and signal handlers
+    '''
     def __init__(self):
         self.dbusConnexions = {}
         self.signalHandlers = {}
 
 
     def reset(self):
+        '''
+        Disconnect signal handlers before resetting cache.
+        '''
         self.dbusConnexions = {}
         # disconnect signal handlers
         for key in self.signalHandlers:
@@ -80,8 +86,10 @@ class DbusCache:
 
 ###############################################################################
 class DbusSignalHandler:
+    '''
+    signal hash id as busName#senderName#objectName#interfaceName#signalName
+    '''
     def __init__(self, busName, senderName, objectName, interfaceName, signalName):
-        # publish hash id
         self.id = "#".join([senderName, objectName, interfaceName, signalName])
         # connect handler to signal
         self.bus = cache.dbusConnexion(busName)
@@ -94,15 +102,19 @@ class DbusSignalHandler:
 
 
     def handleSignal(self, *args):
-        # publish dbus args under topic hash id
+        '''
+        publish dbus args under topic hash id
+        '''
         factory.dispatch(self.id, json.dumps(args))
 
 
 
 ###############################################################################
 class DbusCallHandler:
+    '''
+    deferred reply to return dbus results
+    '''
     def __init__(self, method, args):
-        # deferred reply to return dbus results
         self.pending = False
         self.request = defer.Deferred()
         self.method = method
@@ -110,20 +122,26 @@ class DbusCallHandler:
 
 
     def callMethod(self):
-        # dbus method async call
+        '''
+        dbus method async call
+        '''
         self.pending = True
         self.method(*self.args, reply_handler=self.dbusSuccess, error_handler=self.dbusError)
         return self.request
 
 
     def dbusSuccess(self, *result):
-        # return JSON string result array
+        '''
+        return JSON string result array
+        '''
         self.request.callback(json.dumps(result))
         self.pending = False
 
 
     def dbusError(self, error):
-        # return dbus error message
+        '''
+        return dbus error message
+        '''
         self.request.errback(error.get_dbus_message())
         self.pending = False
 
@@ -131,17 +149,20 @@ class DbusCallHandler:
 
 ###############################################################################
 class CloudeebusService:
+    '''
+    support for sending DBus messages and registering for DBus signals
+    '''
     def __init__(self, permissions):
         self.permissions = permissions;
-        # proxy objects
         self.proxyObjects = {}
-        # proxy methods
         self.proxyMethods = {}
-        # pending dbus calls
         self.pendingCalls = []
 
 
     def proxyObject(self, busName, serviceName, objectName):
+        '''
+        object hash id as serviceName#objectName
+        '''
         id = "#".join([serviceName, objectName])
         if not self.proxyObjects.has_key(id):
             if not OPENDOOR:
@@ -153,6 +174,9 @@ class CloudeebusService:
 
 
     def proxyMethod(self, busName, serviceName, objectName, interfaceName, methodName):
+        '''
+        method hash id as serviceName#objectName#interfaceName#methodName
+        '''
         id = "#".join([serviceName, objectName, interfaceName, methodName])
         if not self.proxyMethods.has_key(id):
             obj = self.proxyObject(busName, serviceName, objectName)
@@ -162,7 +186,9 @@ class CloudeebusService:
 
     @exportRpc
     def dbusRegister(self, list):
-        # read arguments list by position
+        '''
+        arguments: bus, sender, object, interface, signal
+        '''
         if len(list) < 5:
             raise Exception("Error: expected arguments: bus, sender, object, interface, signal)")
         
@@ -184,12 +210,14 @@ class CloudeebusService:
 
     @exportRpc
     def dbusSend(self, list):
+        '''
+        arguments: bus, destination, object, interface, message, [args]
+        '''
         # clear pending calls
         for call in self.pendingCalls:
             if not call.pending:
                 self.pendingCalls.remove(call)
         
-        # read arguments list by position
         if len(list) < 5:
             raise Exception("Error: expected arguments: bus, destination, object, interface, message, [args])")
         
@@ -210,6 +238,9 @@ class CloudeebusService:
 
 ###############################################################################
 class CloudeebusServerProtocol(WampCraServerProtocol):
+    '''
+    connexion and session authentication management
+    '''
     
     def onSessionOpen(self):
         # CRA authentication options

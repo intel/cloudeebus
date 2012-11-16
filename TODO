@@ -6,9 +6,10 @@ Distribution:
 Proxy object properties:
 ------------------------
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
+- support cloning proxies so that introspection is called only once per object type.
 
 
-Security:
----------
-- manage signal subscription according to manifest locally per connexion
+DBus service support:
+---------------------
+- support publishing a DBus service
 

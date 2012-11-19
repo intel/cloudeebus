@@ -22,13 +22,14 @@ Cloudeebus will install itself in Python's dist-packages folder. The
 The Cloudeebus server must be run either with credentials and a whitelist to
  restrict access to DBus services, or in opendoor mode.
 
-	usage: cloudeebus.py [-h] [-d] [-o] [-p PORT] [-c CREDENTIALS] [-w WHITELIST]
+	usage: cloudeebus.py [-h] [-v] [-d] [-o] [-p PORT] [-c CREDENTIALS] [-w WHITELIST]
 	
 	Javascript DBus bridge.
 	
 	optional arguments:
 	  -h, --help            show this help message and exit
 	  -d, --debug           log debug info on standard output
+	  -v, --version         print version and exit
 	  -o, --opendoor        allow anonymous access to all services
 	  -p PORT, --port PORT  port number
 	  -c CREDENTIALS, --credentials CREDENTIALS

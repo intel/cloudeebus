@@ -47,6 +47,7 @@ from twisted.python import log
 
 ###############################################################################
 
+VERSION = "0.1"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
@@ -292,6 +293,8 @@ if __name__ == '__main__':
     cache = DbusCache()
 
     parser = argparse.ArgumentParser(description='Javascript DBus bridge.')
+    parser.add_argument('-v', '--version', action='store_true', 
+        help='print version and exit')
     parser.add_argument('-d', '--debug', action='store_true', 
         help='log debug info on standard output')
     parser.add_argument('-o', '--opendoor', action='store_true',
@@ -305,6 +308,10 @@ if __name__ == '__main__':
     
     args = parser.parse_args(sys.argv[1:])
 
+    if args.version:
+        print("Cloudeebus version " + VERSION)
+        exit(0)
+    
     if args.debug:
         log.startLogging(sys.stdout)
     

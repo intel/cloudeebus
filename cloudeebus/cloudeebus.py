@@ -236,6 +236,14 @@ class CloudeebusService:
         return dbusCallHandler.callMethod()
 
 
+    @exportRpc
+    def getVersion(self):
+        '''
+        return current version string
+        '''
+        return VERSION
+
+
 
 ###############################################################################
 class CloudeebusServerProtocol(WampCraServerProtocol):

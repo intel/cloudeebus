@@ -24,6 +24,14 @@
 				"org.ofono"
 			]
 		};
+		function evalScript() {
+			eval(
+				"var lambda = function() {" +
+					document.getElementById('script').value +
+				"};" + 
+				"lambda();"
+			);
+		}
         </script>
     </head>
    <body>
@@ -67,7 +75,7 @@ function errorCB(error) {
 cloudeebus.connect("ws://localhost:9000", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
-		<input type="button" value="run script" onclick="eval(document.getElementById('script').value)"/>
+		<input type="button" value="run script" onclick="evalScript()"/>
 		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
 		<br>
 		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>

@@ -8,20 +8,8 @@
 			name: "cloudeebus",
 			key: "secret",
 			permissions: [
-				"com.intel.media-service-upnp",
-				"com.intel.renderer-service-upnp",
 				"org.freedesktop.DBus",
-				"org.freedesktop.DisplayManager",
-				"org.freedesktop.FileManager1",
-				"org.freedesktop.ModemManager",
-				"org.freedesktop.NetworkManager",
-				"org.freedesktop.Notifications",
-				"org.freedesktop.Tracker1",
-				"org.gnome.Nautilus",
-				"org.gnome.Rygel1",
-				"org.gnome.ScreenSaver",
-				"org.neard",
-				"org.ofono"
+				"org.freedesktop.Notifications"
 			]
 		};
 		function evalScript() {
@@ -42,34 +30,25 @@ cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
 
-var proxy, interval;
-
-function connectSuccess() {
-  var bus = cloudeebus.SessionBus();
-  handler = bus.getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
-  handler.connectToSignal("org.gnome.ScreenSaver", "ActiveChanged", successCB, errorCB);
-  proxy = bus.getObject("org.gnome.ScreenSaver", "/", lock, errorCB);
-}
-
-function unLock() {
-  proxy.SetActive(false, successCB, errorCB);
-  clearInterval(interval);
-}
-
-function lock() {
-  proxy.SetActive(true, lockOk, errorCB);
-}
-
-function lockOk(res) {
-  interval = setInterval(unLock,3000);
-}
-
-function successCB(res) {
-  cloudeebus.log("got result: " + res + "\n");
-}
-
 function errorCB(error) {
   cloudeebus.log("error: " + error + "\n");
+}
+
+function logCB(result) {
+  cloudeebus.log(JSON.stringify(result));
+}
+
+function gotNotifProxy(proxy) {
+  proxy.Notify("Cloudeebus",0,"","Cloudeebus says:", "Hello, world !", [], {}, 0);
+}
+
+function gotBusProxy(proxy) {
+  proxy.ListNames(logCB, errorCB);
+}
+
+function connectSuccess() {
+  cloudeebus.SessionBus().getObject("org.freedesktop.DBus", "/org/freedesktop/DBus", gotBusProxy, errorCB);
+  cloudeebus.SessionBus().getObject("org.freedesktop.Notifications", "/org/freedesktop/Notifications", gotNotifProxy, errorCB);
 }
 
 cloudeebus.connect("ws://localhost:9000", manifest, connectSuccess, errorCB);
@@ -78,6 +57,6 @@ cloudeebus.connect("ws://localhost:9000", manifest, connectSuccess, errorCB);
 		<input type="button" value="run script" onclick="evalScript()"/>
 		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
 		<br>
-		<pre id="log" style="height: 20em; overflow-y: scroll; background-color: #faa;"></pre>
+		<pre id="log" style="height: 20em; overflow-x: auto; overflow-y: auto; background-color: #faa;"></pre>
    </body>
 </html>

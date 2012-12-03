@@ -1,16 +1,4 @@
 [
-	"com.intel.media-service-upnp",
-	"com.intel.renderer-service-upnp",
 	"org.freedesktop.DBus",
-	"org.freedesktop.DisplayManager",
-	"org.freedesktop.FileManager1",
-	"org.freedesktop.ModemManager",
-	"org.freedesktop.NetworkManager",
-	"org.freedesktop.Notifications",
-	"org.freedesktop.Tracker1",
-	"org.gnome.Nautilus",
-	"org.gnome.Rygel1",
-	"org.gnome.ScreenSaver",
-	"org.neard",
-	"org.ofono"
+	"org.freedesktop.Notifications"
 ]

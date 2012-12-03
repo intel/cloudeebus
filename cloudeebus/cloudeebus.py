@@ -162,9 +162,9 @@ class CloudeebusService:
 
     def proxyObject(self, busName, serviceName, objectName):
         '''
-        object hash id as serviceName#objectName
+        object hash id as busName#serviceName#objectName
         '''
-        id = "#".join([serviceName, objectName])
+        id = "#".join([busName, serviceName, objectName])
         if not self.proxyObjects.has_key(id):
             if not OPENDOOR:
                 # check permissions, array.index throws exception
@@ -176,9 +176,9 @@ class CloudeebusService:
 
     def proxyMethod(self, busName, serviceName, objectName, interfaceName, methodName):
         '''
-        method hash id as serviceName#objectName#interfaceName#methodName
+        method hash id as busName#serviceName#objectName#interfaceName#methodName
         '''
-        id = "#".join([serviceName, objectName, interfaceName, methodName])
+        id = "#".join([busName, serviceName, objectName, interfaceName, methodName])
         if not self.proxyMethods.has_key(id):
             obj = self.proxyObject(busName, serviceName, objectName)
             self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)

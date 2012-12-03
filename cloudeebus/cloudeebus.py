@@ -91,7 +91,7 @@ class DbusSignalHandler:
     signal hash id as busName#senderName#objectName#interfaceName#signalName
     '''
     def __init__(self, busName, senderName, objectName, interfaceName, signalName):
-        self.id = "#".join([senderName, objectName, interfaceName, signalName])
+        self.id = "#".join([busName, senderName, objectName, interfaceName, signalName])
         # connect handler to signal
         self.bus = cache.dbusConnexion(busName)
         self.bus.add_signal_receiver(self.handleSignal, signalName, interfaceName, senderName, objectName)
@@ -99,7 +99,7 @@ class DbusSignalHandler:
     
     def disconnect(self):
         names = self.id.split("#")
-        self.bus.remove_signal_receiver(self.handleSignal, names[3], names[2], names[0], names[1])
+        self.bus.remove_signal_receiver(self.handleSignal, names[4], names[3], names[1], names[2])
 
 
     def handleSignal(self, *args):
@@ -198,12 +198,12 @@ class CloudeebusService:
             self.permissions.index(list[1])
         
         # check if a handler exists
-        sigId = "#".join(list[1:5])
+        sigId = "#".join(list)
         if cache.signalHandlers.has_key(sigId):
             return sigId
         
         # create a handler that will publish the signal
-        dbusSignalHandler = DbusSignalHandler(*list[0:5])
+        dbusSignalHandler = DbusSignalHandler(*list)
         cache.signalHandlers[sigId] = dbusSignalHandler
         
         return dbusSignalHandler.id

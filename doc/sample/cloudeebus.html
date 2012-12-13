@@ -4,14 +4,6 @@
         <script src="../../lib/autobahn.min.js"></script>
         <script src="../../cloudeebus/cloudeebus.js"></script>
         <script type="text/javascript">
-		var manifest = {
-			name: "cloudeebus",
-			key: "secret",
-			permissions: [
-				"org.freedesktop.DBus",
-				"org.freedesktop.Notifications"
-			]
-		};
 		function evalScript() {
 			eval(
 				"var lambda = function() {" +
@@ -26,6 +18,15 @@
         <center><h1>cloudeebus</h1></center>
         <br>
 		<textarea cols="80" rows=24 id="script">
+var manifest = {
+	name: "cloudeebus",
+	key: "secret",
+	permissions: [
+		"org.freedesktop.DBus",
+		"org.freedesktop.Notifications"
+	]
+};
+
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }

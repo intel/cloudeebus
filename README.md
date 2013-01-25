@@ -16,6 +16,10 @@ Cloudeebus will install itself in Python's dist-packages folder. The
 
 	sudo python setup.py install
 
+See the [Getting Started](https://github.com/01org/cloudeebus/wiki/Getting-started)
+ section of the [Cloudeebus wiki](https://github.com/01org/cloudeebus/wiki)
+ for a list of dependencies to install.
+
 
 ### Running Cloudeebus:
 
@@ -58,6 +62,7 @@ Cloudeebus runs with credentials and a whitelist that are matched by the
 	cloudeebus.py --debug --credentials=./doc/sample/CREDENTIALS --whitelist=./doc/sample/WHITELIST &
 	firefox ./doc/sample/cloudeebus.html &
 
+The sample page is also online as a [live demo](http://01org.github.com/cloudeebus/).
 
 Acknowledgements
 ----------------

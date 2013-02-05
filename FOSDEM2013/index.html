@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Cloudeebus - Javascript DBus proxies</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Luc Yriarte">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/otc.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		
+		<script src="lib/js/autobahn.min.js"></script>
+		<script src="lib/js/cloudeebus.js"></script>
+		<script type="text/javascript">
+		function evalContent(nodeId) {
+			eval( 
+				"document.getElementById(nodeId + '_log').innerHTML='';" +
+				"function log(str) { document.getElementById(nodeId + '_log').innerHTML+=str+\"\\n\"; }" + 
+				"var lambda = function() {" +
+					document.getElementById(nodeId).textContent +
+				"};" + 
+				"lambda();"
+			);
+		}
+		</script>
+		
+	</head>
+
+	<body>
+
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+
+				<section>
+					<h1>Cloudeebus</h1>
+					<h3>Javascript DBus proxies</h3>
+					<br>
+					<footer>
+						<small>
+						<p><a href="https://github.com/01org/cloudeebus">https://github.com/01org/cloudeebus</a></p>
+						<p>Luc Yriarte / luc.yriarte@intel.com</p>
+						</small>
+						<img src="images/otc-bar.png" style="background:none;border:none;box-shadow:none;margin:none;width:100%"/>
+					</footer>
+				</section>
+
+
+				<section>
+					<h2>Javascript - DBus: Why, How ?</h2>
+					<br>
+					<h2>A DBus proxy API for Javascript</h2>
+					<br>
+					<h2>Server side: DBus and Python</h2>
+				</section>
+
+
+				<section>
+					<h2>Javascript - DBus: Why, How ?</h2>
+					<h4>Exposing DBus APIs for web apps</h4>
+					<h4>Linux DBus services</h4>
+					<h4>HTML5 Javascript APIs</h4>
+					<h4>Cloudeebus architecture</h4>
+				</section>
+
+
+				<section>
+					<h3>Exposing DBus APIs for web apps</h3>
+					<table>
+					<tr><th style="width:50%"><h3>pros</h3></th><th style="width:50%"><h3>cons</h3></th></tr>
+					<tr><td><ul>
+					  <li>DBus: standard system services protocol
+					</ul></td>
+					<td><ul>
+					  <li>Only good for Linux
+					</ul></td></tr>
+					<tr><td><ul>
+					  <li>Saves per-service development
+					</ul></td>
+					<td><ul>
+					  <li>Need a security policy
+					</ul></td></tr>
+					</table>
+					<br>
+					<h3>Where is it useful ?</h3>
+					<ul>
+					  <li>Network devices
+					  <li>HTML5 APIs implementation
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Linux DBus services</h2>
+					<ul>
+					<li><a href="http://www.bluez.org/">BlueZ</a> bluetooth <a href="http://git.kernel.org/?p=bluetooth/bluez.git;a=tree;f=doc">APIs</a>: 
+					<p>Discovery, Obex, Networking...</p></li>
+					<li><a href="https://live.gnome.org/Tracker/">Tracker</a> data indexing <a href="https://live.gnome.org/Tracker/Documentation/DBusAPI">APIs</a>: 
+					<p>SPARQL queries / ontologies</li>
+					<li><a href="https://live.gnome.org/Rygel">Rygel</a> media server <a href="https://live.gnome.org/Rygel/MediaServerSpec">APIs</a>: 
+					<p>find / browse media content.</p></li>
+					<li><a href="https://ofono.org/">oFono</a> telephony <a href="http://git.kernel.org/?p=network/ofono/ofono.git;a=tree;f=doc">APIs</a>: 
+					<p>dial, call management, messaging...</p></li>
+					<li><a href="https://01.org/linux-nfc/">Neard</a> NFC <a href="http://git.kernel.org/?p=network/nfc/neard.git;a=tree;f=doc">APIs</a>: 
+					<p>Tag read / write, NDEF messages...</p></li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>HTML5 Javascript APIs</h2>
+					<ul>
+					<li><a href="http://www.w3.org/wiki/System_Applications">W3C</a> System / device applications APIs:
+					<p>Telephony, messaging, media capture, NFC ...</p></li>
+					<li><a href="http://cordova.apache.org/">Cordova</a> mobile APIs framework:
+					<p>Media recording, accelerometer, geolocation, device info...</p></li>
+					<li><a href="http://tizen.org/">Tizen</a> Device APIs:
+					<p>Bluetooth, NFC, Phone call...</p></li>
+					</ul>
+					<br>
+					<h3>Overlapping, converging, moving...<br>
+					...until W3C normalization
+					</h3>
+				</section>
+
+
+				<section>
+					<h3>Cloudeebus architecture</h3>
+					<img src="images/cloudeebus-block.png" style="background:none;border:none;box-shadow:none;margin:none;max-height:60%"/>
+				</section>
+
+
+				<section>
+					<h2>A DBus proxy API for Javascript</h2>
+					<h4>DBus proxies</h4>
+					<h4>DBus introspection</h4>
+					<h4>Python DBus proxies</h4>
+					<h4>Using asynchronous APIs</h4>
+					<h4>Cloudeebus Javascript proxies</h4>
+					<h4>Cloudeebus Javascript API</h4>
+				</section>
+
+
+				<section>
+					<h2>DBus proxies</h2>
+					<ul>
+					<li>Refer to a remote object path
+					<li>Have properties, of base or compound types: arrays, dictionaries
+					<li>Implement interfaces
+					<li>Export methods
+					<li>Register signal handlers
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>DBus introspection</h2>
+					<h3>ScreenSaver root object</h3>
+					<pre><code>&lt;interface name="org.gnome.ScreenSaver"&gt;
+    &lt;method name="GetActive"&gt;
+      &lt;arg name="value" direction="out" type="b"/&gt;
+    &lt;/method&gt;
+    &lt;method name="SetActive"&gt;
+      &lt;arg name="value" direction="in" type="b"/&gt;
+    &lt;/method&gt;
+    &lt;method name="ShowMessage"&gt;
+      &lt;arg name="summary" direction="in" type="s"/&gt;
+      &lt;arg name="body" direction="in" type="s"/&gt;
+      &lt;arg name="icon" direction="in" type="s"/&gt;
+    &lt;/method&gt;
+    &lt;signal name="ActiveChanged"&gt;
+      &lt;arg name="new_value" type="b"/&gt;
+    &lt;/signal&gt;
+  &lt;/interface&gt;</code></pre>
+				</section>
+
+				
+				<section>
+					<h2>Python DBus proxies</h2>
+					<h3>Using the ScreenSaver root object</h3>
+					<pre><code>import dbus, time
+
+bus = dbus.SessionBus()
+obj = bus.get_object("org.gnome.ScreenSaver", 
+  "/org/gnome/ScreenSaver")
+proxy = dbus.Interface(obj, "org.gnome.ScreenSaver")
+
+proxy.SetActive(True)
+proxy.ShowMessage("Hello", "dbus-python is cool", "")
+time.sleep(3)
+proxy.SetActive(False)
+					</code></pre>
+				</section>
+
+				
+				<section>
+					<h2>Using asynchronous APIs</h2>
+					<h3>dbus-python (sync)</h3>
+					<pre><code>result = obj.foo(x,y)
+...</code></pre>
+					<h3>cloudeebus (async)</h3>
+					<pre><code>function reply(result) {
+...
+}
+function error(str) {
+  alert(str);
+}
+obj.foo(x,y,reply,error)</code></pre>
+					<p>Introspection appends two optional parameters to every method: reply handler, error handler</p>
+				</section>
+
+
+				<section>
+					<h3>Cloudeebus Javascript proxies</h3>
+					<pre><code contenteditable id="script_1">var bus, proxy, interval;
+function unLock() {
+  proxy.GetActive(function(state){log("active: " + state);})
+  proxy.SetActive(false);
+  clearInterval(interval);
+}
+function introspected(obj) {
+  proxy.SetActive(true);
+  proxy.ShowMessage("Hello", "Cloudeebus is cool", "");
+  interval = setInterval(unLock,3000);
+}
+function connected() {
+  bus = cloudeebus.SessionBus();
+  proxy = bus.getObject("org.gnome.ScreenSaver", 
+    "/org/gnome/ScreenSaver", 
+    introspected, window.alert);
+} 
+cloudeebus.connect("ws://localhost:9001", null, connected, window.alert);</code></pre>
+					<input type="button" value="Try me" onclick="evalContent('script_1')"/>
+					<pre id="script_1_log"></pre>
+				</section>
+
+
+				<section>
+					<h3>Cloudeebus Javascript API</h3>
+					<pre><code contenteditable id="script_2">var bus, proxy;
+function handler(state) {
+  log("changed: " + state);
+  proxy.disconnectSignal("org.gnome.ScreenSaver", "ActiveChanged");
+  proxy.callMethod("org.gnome.ScreenSaver","SetActive",[false]);
+  proxy.callMethod("org.gnome.ScreenSaver","GetActive",[],
+    function(state){log("active: " + state);});
+}
+function connected() {
+  bus = cloudeebus.SessionBus();
+  proxy = bus.getObject("org.gnome.ScreenSaver", 
+    "/org/gnome/ScreenSaver");
+  proxy.connectToSignal("org.gnome.ScreenSaver", 
+    "ActiveChanged", handler);
+  proxy.callMethod("org.gnome.ScreenSaver","SetActive",[true]);
+}
+cloudeebus.connect("ws://localhost:9001", null, connected, window.alert);</code></pre>
+					<input type="button" value="Try me" onclick="evalContent('script_2')"/>
+					<pre id="script_2_log"></pre>
+				</section>
+
+
+				<section>
+					<h2>Server side: DBus and Python</h2>
+					<h4>Running the Cloudeebus server</h4>
+					<h4>Whitelist, Credentials, Manifest</h4>
+				</section>
+
+
+				<section>
+				  <h2>Running the Cloudeebus server</h2>
+				  
+<pre>usage: cloudeebus.py [-h] [-v] [-d] [-o] [-p PORT] [-c CREDENTIALS]
+                     [-w WHITELIST]
+
+Javascript DBus bridge.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         print version and exit
+  -d, --debug           log debug info on standard output
+  -o, --opendoor        allow anonymous access to all services
+  -p PORT, --port PORT  port number
+  -c CREDENTIALS, --credentials CREDENTIALS
+                        path to credentials file
+  -w WHITELIST, --whitelist WHITELIST
+                        path to whitelist file</pre>
+				</section>
+
+			
+				<section>
+					<h3>Server side: Whitelist</h3>
+<pre>[
+    "org.gnome.Nautilus",
+    "org.gnome.ScreenSaver"
+]</pre>
+					<h3>Server side: Credentials</h3>
+<pre>{
+    "cloudeebus": "secret",
+    "user1": "hello",
+    "user2": "hi"
+}</pre>
+					<h3>Client side: Manifest</h3>
+<pre>var manifest = {
+    name: "cloudeebus",
+    version: "v0.0 / development",
+    key: "secret",
+    permissions: [
+        "org.gnome.ScreenSaver"
+    ]
+};</pre>
+				</section>
+			
+			
+				<section>
+					<h2>To Do</h2>
+					<ul>
+					<li>Export services
+					<li>Port on node.js, Yocto layer...
+					<li>Use "Promises" pattern for asynchronous APIs
+					<li>Proxy cloning, automatic proxy updates
+					<li>Support DBus file descriptors
+					<li>more...
+					</ul>
+				</section>
+
+
+				<section>
+					<h1>Thanks !</h1>
+					<br>
+					<footer>
+						<small>
+						<p><a href="https://github.com/01org/cloudeebus">https://github.com/01org/cloudeebus</a></p>
+						<p>Luc Yriarte / luc.yriarte@intel.com</p>
+						</small>
+					</footer>
+				</section>
+
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

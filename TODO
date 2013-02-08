@@ -1,5 +1,7 @@
 Distribution:
 -------------
+- port on node.js, distribute as a node.js module
+- yocto layer
 - investigate javascript library minimizing / obfuscation.
 
 
@@ -7,6 +9,11 @@ Proxy object properties:
 ------------------------
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
 - support cloning proxies so that introspection is called only once per object type.
+
+
+API style:
+----------
+- use "Promises" pattern for asynchronous APIs 
 
 
 DBus service support:

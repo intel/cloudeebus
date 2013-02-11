@@ -1,6 +1,6 @@
 {
-  "name": "node-dbus-proxy",
-  "version": "0.2.0",
+  "name": "cloudeebus",
+  "version": "0.2.1",
   "description": "Javascript-DBus bridge",
   "author": "Luc Yriarte <luc.yriarte@intel.com>",
   "maintainers": [

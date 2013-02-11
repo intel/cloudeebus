@@ -2,9 +2,8 @@
 Cloudeebus
 ==========
 
-Cloudeebus - DBus for the Cloud - is a component which enables calling DBus
- methods and registering on DBus signals from Javascript.
-
+Cloudeebus - node.js version - implements DBus proxy objects on
+top of node-dbus.
 
 Install
 -------

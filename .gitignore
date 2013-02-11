@@ -1,7 +1,4 @@
 *~
-build
-dist
-cloudeebus.egg-info
 node_modules
 .project
 .pydevproject

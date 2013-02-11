@@ -18,114 +18,34 @@
 
 /*****************************************************************************/
 
-var dbus = { // hook object for dbus types not translated by python-json
-		Double: function(value, level) {
-			return value;
-		}
+var dbus = require('node-dbus');
+var DOMParser = require('xmldom').DOMParser;
+
+dbus.log = function(msg) {
+	console.log(msg);
 };
 
-
-
-/*****************************************************************************/
-
-var cloudeebus = window.cloudeebus = {version: "0.2.1"};
-
-cloudeebus.reset = function() {
-	cloudeebus.sessionBus = null;
-	cloudeebus.systemBus = null;
-	cloudeebus.wampSession = null;
-	cloudeebus.uri = null;
-};
-
-
-cloudeebus.log = function(msg) { 
-};
-
-
-cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
-	cloudeebus.reset();
-	cloudeebus.uri = uri;
-	
-	function onCloudeebusVersionCheckCB(version) {
-		if (cloudeebus.version == version) {
-			cloudeebus.log("Connected to " + cloudeebus.uri);
-			if (successCB)
-				successCB();
-		} else {
-			var errorMsg = "Cloudeebus server version " + version + " and client version " + cloudeebus.version + " mismatch";
-			cloudeebus.log(errorMsg);
-			if (errorCB)
-				errorCB(errorMsg);
-		}
-	}
-	
-	function onWAMPSessionAuthErrorCB(error) {
-		cloudeebus.log("Authentication error: " + error.desc);
-		if (errorCB)
-			errorCB(error.desc);
-	}
-	
-	function onWAMPSessionAuthenticatedCB(permissions) {
-		cloudeebus.sessionBus = new cloudeebus.BusConnection("session", cloudeebus.wampSession);
-		cloudeebus.systemBus = new cloudeebus.BusConnection("system", cloudeebus.wampSession);
-		cloudeebus.wampSession.call("getVersion").then(onCloudeebusVersionCheckCB, errorCB);
-	}
-	
-	function onWAMPSessionChallengedCB(challenge) {
-		var signature = cloudeebus.wampSession.authsign(challenge, manifest.key);
-		cloudeebus.wampSession.auth(signature).then(onWAMPSessionAuthenticatedCB, onWAMPSessionAuthErrorCB);
-	}
-	
-	function onWAMPSessionConnectedCB(session) {
-		cloudeebus.wampSession = session;
-		if (manifest)
-			cloudeebus.wampSession.authreq(
-					manifest.name, 
-					{permissions: JSON.stringify(manifest.permissions)}
-				).then(onWAMPSessionChallengedCB, onWAMPSessionAuthErrorCB);
-		else
-			cloudeebus.wampSession.authreq().then(function() {
-				cloudeebus.wampSession.auth().then(onWAMPSessionAuthenticatedCB, onWAMPSessionAuthErrorCB);
-				}, onWAMPSessionAuthErrorCB);
-	}
-
-	function onWAMPSessionErrorCB(code, reason) {
-		if (code == ab.CONNECTION_UNSUPPORTED) {
-			cloudeebus.log("Browser is not supported");
-		}
-		else {
-			cloudeebus.log("Failed to open session, code = " + code + ", reason = " + reason);
-		}
-		if (errorCB)
-			errorCB(reason);
-	}
-
-	return ab.connect(cloudeebus.uri, onWAMPSessionConnectedCB, onWAMPSessionErrorCB);
-};
-
-
-cloudeebus.SessionBus = function() {
-	return cloudeebus.sessionBus;
-};
-
-
-cloudeebus.SystemBus = function() {
-	return cloudeebus.systemBus;
-};
-
-
-
-/*****************************************************************************/
-
-cloudeebus.BusConnection = function(name, session) {
+dbus.BusConnection = function(name) {
 	this.name = name;
-	this.wampSession = session;
+	if (this.name == "Session")
+		this.bus = dbus.DBUS_BUS_SESSION;
+	else if (this.name == "System")
+		this.bus = dbus.DBUS_BUS_SYSTEM;
+	return this;
+};
+
+dbus.SessionBus = function() {
+	return new dbus.BusConnection("Session");
+};
+
+dbus.SystemBus = function() {
+	return new dbus.BusConnection("System");
 	return this;
 };
 
 
-cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
-	var proxy = new cloudeebus.ProxyObject(this.wampSession, this, busName, objectPath);
+dbus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
+	var proxy = new dbus.ProxyObject(this, busName, objectPath);
 	if (introspectCB)
 		proxy._introspect(introspectCB, errorCB);
 	return proxy;
@@ -135,16 +55,16 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 
 /*****************************************************************************/
 
-cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
-	this.wampSession = session; 
+dbus.ProxyObject = function(busConnection, busName, objectPath) {
 	this.busConnection = busConnection; 
 	this.busName = busName; 
 	this.objectPath = objectPath; 
+	this.handlers = {};
 	return this;
 };
 
 
-cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
+dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	
 	var self = this; 
 
@@ -183,16 +103,19 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			while (ifChild) {
 				if (ifChild.nodeName == "method") {
 					var nArgs = 0;
+					var signature = "";
 					var metChild = ifChild.firstChild;
 					while (metChild) {
 						if (metChild.nodeName == "arg" &&
-							metChild.attributes.getNamedItem("direction").value == "in")
+							metChild.attributes.getNamedItem("direction").value == "in") {
+								signature += metChild.attributes.getNamedItem("type").value;
 								nArgs++;
+						}
 						metChild = metChild.nextSibling;
 					}
 					self._addMethod(ifName, 
 							ifChild.attributes.getNamedItem("name").value, 
-							nArgs);
+							nArgs, signature);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -221,7 +144,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 };
 
 
-cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+dbus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
 
 	var self = this;
 	
@@ -237,23 +160,23 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 			successCB = arguments[nArgs];
 		if (arguments.length > nArgs + 1)
 			errorCB = arguments[nArgs + 1];
-		self.callMethod(ifName, method, args, successCB, errorCB);
+		self.callMethod(ifName, method, args, successCB, errorCB, signature);
 	};
 	
 };
 
 
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
+dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB, signature) {
 	
 	var self = this; 
 
-	function callMethodSuccessCB(str) {
+	function callMethodSuccessCB() {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
-				successCB.apply(self, eval(str));
+			try {
+				successCB.apply(self, arguments);
 			}
 			catch (e) {
-				cloudeebus.log("Method callback exception: " + e);
+				dbus.log("Method callback exception: " + e);
 				if (errorCB)
 					errorCB(e);
 			}
@@ -261,75 +184,76 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 	}
 
 	function callMethodErrorCB(error) {
-		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
+		dbus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.message);
 		if (errorCB)
-			errorCB(error.desc);
+			errorCB(error.message);
 	}
 
-	var arglist = [
-		self.busConnection.name,
-		self.busName,
-		self.objectPath,
-		ifName,
-		method,
-		JSON.stringify(args)
-	];
+	var dbusMsg = Object.create(dbus.DBusMessage, {
+		destination: {value: self.busName},
+		path: {value: self.objectPath},
+		iface: {value: ifName},
+		member: {value: method},
+		bus: {value: self.busConnection.bus},
+		type: {value: dbus.DBUS_MESSAGE_TYPE_METHOD_RETURN}
+	});
 
-	// call dbusSend with bus type, destination, object, message and arguments
-	self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+	if (args.length) {
+		args.unshift(signature);
+		dbusMsg.appendArgs.apply(dbusMsg, args);
+	}
+	
+	dbusMsg.on("methodResponse", callMethodSuccessCB);
+	dbusMsg.on("error", callMethodErrorCB);
+
+	dbusMsg.send();
 };
 
 
-cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
+dbus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
 	
 	var self = this; 
 
-	function signalHandler(id, data) {
+	function signalHandler() {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
-				successCB.apply(self, eval(data));
+			try { // first argument is the handler, pass the rest
+				var args = [];
+				for (i in arguments)
+					args.push(arguments[i]);
+				args.shift();
+				successCB.apply(self, args);
 			}
 			catch (e) {
-				cloudeebus.log("Signal handler exception: " + e);
+				dbus.log("Signal handler exception: " + e);
 				if (errorCB)
 					errorCB(e);
 			}
 		}
 	}
 	
-	function connectToSignalSuccessCB(str) {
-		try {
-			self.wampSession.subscribe(str, signalHandler);
-		}
-		catch (e) {
-			cloudeebus.log("Subscribe error: " + e);
-		}
-	}
-
 	function connectToSignalErrorCB(error) {
-		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + error.desc);
+		dbus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + error.message);
 		if (errorCB)
-			errorCB(error.desc);
+			errorCB(error.message);
 	}
 
-	var arglist = [
-		self.busConnection.name,
-		self.busName,
-		self.objectPath,
-		ifName,
-		signal
-	];
+	var dbusSignalHandler = Object.create(dbus.DBusMessage, {
+		path: {value: self.objectPath},
+		iface: {value: ifName},
+		member: {value: signal},
+		bus: {value: self.busConnection.bus},
+		type: {value: dbus.DBUS_MESSAGE_TYPE_SIGNAL}
+	});
 
-	// call dbusSend with bus type, destination, object, message and arguments
-	self.wampSession.call("dbusRegister", arglist).then(connectToSignalSuccessCB, connectToSignalErrorCB);
+	this.handlers[ifName + "#" + signal] = dbusSignalHandler;
+	
+	dbusSignalHandler.on ("signalReceipt", signalHandler);
+	dbusSignalHandler.on ("error", connectToSignalErrorCB);
+
+	dbusSignalHandler.addMatch();
 };
 
 
-cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
-	try {
-		this.wampSession.unsubscribe(this.busConnection.name + "#" + this.busName + "#" + this.objectPath + "#" + ifName + "#" + signal);
-	}
-	catch (e) {
-		cloudeebus.log("Unsubscribe error: " + e);
-	}
+dbus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
+	this.handlers[ifName + "#" + signal].removeMatch();
 };

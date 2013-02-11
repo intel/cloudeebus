@@ -1,0 +1,20 @@
+{
+  "name": "node-dbus-proxy",
+  "version": "0.2.0",
+  "description": "Javascript-DBus bridge",
+  "author": "Luc Yriarte <luc.yriarte@intel.com>",
+  "maintainers": [
+      "Luc Yriarte <luc.yriarte@intel.com>",
+      "Christophe Guiraud <christophe.guiraud@intel.com>"
+  ],
+  "homepage": "https://github.com/01org/cloudeebus/wiki",
+  "repository": {"type": "git","url": "git://github.com/01org/cloudeebus.git"},
+  "main": "./cloudeebus/cloudeebus.js",
+  "scripts": {"test": "./test"},
+  "engines": {"node": ">=0.8.0"},
+  "dependencies": {
+  	"node-dbus": "0.1.x",
+  	"xmldom": "0.1.x"
+  },
+  "licenses": [{"type": "Apache 2.0","url": "http://www.apache.org/licenses/LICENSE-2.0"}]
+}

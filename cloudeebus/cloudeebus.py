@@ -35,6 +35,8 @@ from autobahn.wamp import exportRpc, WampServerFactory, WampCraServerProtocol
 from dbus.mainloop.glib import DBusGMainLoop
 
 import gobject
+import re
+import dbus.service
 gobject.threads_init()
 
 from dbus import glib
@@ -42,8 +44,6 @@ glib.init_threads()
 
 # enable debug log
 from twisted.python import log
-
-
 
 ###############################################################################
 
@@ -148,6 +148,265 @@ class DbusCallHandler:
 
 
 
+from xml.etree.ElementTree import XMLParser
+
+################################################################################       
+## BEGIN: Writer code class
+################################################################################       
+class exec_code:
+    def __init__(self) :
+        self.exec_string = ""
+        self.exec_code = None
+        self.exec_code_valid = 1
+        self.indent_level = 0
+        self.indent_increment = 1
+        self.line = 0
+
+    # __str__ : Return a string representation of the object, for
+    # nice printing.
+    def __str__(self) :
+        return self.exec_string
+
+    def p(self) :
+        print str(self)
+
+    def append_stmt(self, stmt) :
+        self.exec_code_valid = 0
+        self.line += 1
+        if (stmt != "\n"):
+            for x in range(0,self.indent_level):
+                self.exec_string = self.exec_string + ' '            
+            self.exec_string = self.exec_string + stmt + "\t\t# l:" + str(self.line) + '\n'
+        else:
+            if (stmt == "\n"):
+                self.exec_string = self.exec_string + "# l:" + str(self.line) + '\n'
+            else:
+                self.exec_string = self.exec_string + stmt + "\t\t# l:" + str(self.line) + '\n'
+
+    def indent(self) :
+        self.indent_level = self.indent_level + self.indent_increment
+
+    def dedent(self) :
+        self.indent_level = self.indent_level - self.indent_increment
+    
+    # compile : Compile exec_string into exec_code using the builtin
+    # compile function. Skip if already in sync.
+    def compile(self) :
+        if not self.exec_code_valid :
+            self.exec_code = compile(self.exec_string, "<string>", "exec")
+        self.exec_code_valid = 1
+
+    def execute(self) :
+        if not self.exec_code_valid :
+            self.compile()
+        exec self.exec_code
+################################################################################       
+## END: Writer code class
+################################################################################       
+
+################################################################################       
+## BEGIN: XML Parser class
+################################################################################       
+class XmlCb_Parser: # The target object of the parser
+    maxDepth = 0
+    depth = 0
+    def __init__(self, dynDBusClass):
+        self.dynDBusClass = dynDBusClass
+        
+    def start(self, tag, attrib):   # Called for each opening tag.
+        if (tag == 'node'):
+            return
+        # Set interface name
+        if (tag == 'interface'):
+            self.dynDBusClass.set_interface(attrib['name'])
+            return
+        # Set method name
+        if (tag == 'method'):
+            self.current = tag
+            self.dynDBusClass.def_method(attrib['name'])
+            return
+        if (tag == 'signal'):
+            self.current = tag
+            self.dynDBusClass.def_signal(attrib['name'])
+            return
+
+        # Set signature (in/out & name) for method
+        if (tag == 'arg'):
+            if (self.current == 'method'):
+                self.dynDBusClass.add_signature(attrib['name'],
+                                                attrib['direction'],
+                                                attrib['type'])
+                return
+            if (self.current == 'signal'):
+                self.dynDBusClass.add_signature(attrib['name'], 'in',
+                                                attrib['type'])
+                return
+    def end(self, tag):             # Called for each closing tag.
+        if (tag == 'method'):
+            self.dynDBusClass.add_dbus_method()
+            self.dynDBusClass.add_body_method()
+            self.dynDBusClass.end_method()
+        if (tag == 'signal'):
+            self.dynDBusClass.add_dbus_signal()
+            self.dynDBusClass.add_body_signal()
+            self.dynDBusClass.end_method()
+           
+    def data(self, data):
+        pass            # We do not need to do anything with data.
+    def close(self):    # Called when all data has been parsed.
+        return self.maxDepth
+###############################################################################
+## END: XML Parser class
+###############################################################################
+       
+################################################################################       
+## BEGIN: Class for generating dynamically DBus class (with methods)
+################################################################################       
+class dynDBusClass():
+    def __init__(self, className, globalCtx, localCtx):
+        self.className = className
+        self.xmlCB = XmlCb_Parser(self)
+        self.localCtx = localCtx
+        self.globalCtx = globalCtx        
+        self.signature = {}
+        self.class_code = exec_code()  
+        self.class_code.indent_increment = 4
+        self.class_code.append_stmt("import dbus")
+        self.class_code.append_stmt("\n")
+        self.class_code.append_stmt("\n")
+        self.class_code.append_stmt("class " + self.className + "(dbus.service.Object):")
+        self.class_code.indent()
+        
+        ## Overload of __init__ method 
+        self.def_method("__init__")
+        self.add_method("bus, callback=None, objName='/sample', busName='org.cloudeebus'")
+        self.add_stmt("self.bus = bus")
+        self.add_stmt("self.objName = objName")
+        self.add_stmt("self.callback = callback")        
+        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, object_path=objName, bus_name=busName)")
+        self.end_method()
+               
+    def createDBusServiceFromXML(self, xml):
+        self.parser = XMLParser(target=self.xmlCB)
+        self.parser.feed(xml)
+        self.parser.close()
+    
+    def set_interface(self, ifName):
+        self.ifName = ifName
+        
+    def def_method(self, methodName):
+        self.methodToAdd = methodName
+        self.signalToAdd = None
+        self.args_str = str()
+        self.signature = {}
+        self.signature['name'] = str()
+        self.signature['in'] = str()                
+        self.signature['out'] = str()                        
+
+    def def_signal(self, signalName):
+        self.methodToAdd = None
+        self.signalToAdd = signalName
+        self.args_str = str()
+        self.signature = {}
+        self.signature['name'] = str()
+        self.signature['in'] = str()                
+        self.signature['out'] = str()                        
+
+    def add_signature(self, name, direction, signature):
+        if (direction == 'in'):
+            self.signature['in'] += signature
+            if (self.signature['name'] != str()):
+                self.signature['name'] += ", "
+            self.signature['name'] += name
+        if (direction == 'out'):
+            self.signature['out'] = signature                        
+        
+    def add_method(self, args = None, async_cb = None, async_err_cb = None):
+        if (self.methodToAdd != None):
+            name = self.methodToAdd
+        else:
+            name = self.signalToAdd
+        if (args != None):
+            self.args_str = args
+        if (async_cb != None):
+            if (self.args_str != str()):
+                self.args_str += ", "
+            self.args_str += async_cb
+        if (async_err_cb != None):
+            if (self.args_str != str()):
+                self.args_str += ", "
+            self.args_str += async_err_cb
+                        
+        if (self.args_str != str()):
+            self.class_code.append_stmt("def " + name + "(self, %s):" % self.args_str)
+        else:
+            self.class_code.append_stmt("def " + name + "(self):")
+        self.class_code.indent()
+        
+    def end_method(self):
+        self.class_code.append_stmt("\n")
+        self.class_code.append_stmt("\n")        
+        self.class_code.dedent()
+        
+    def add_dbus_method(self):
+        decorator = '@dbus.service.method("' + self.ifName + '"'
+        if (self.signature.has_key('in') and self.signature['in'] != str()):
+                decorator += ", in_signature='" + self.signature['in'] + "'"
+        if (self.signature.has_key('out') and self.signature['out'] != str()):
+                decorator += ", out_signature='" + self.signature['out'] + "'"
+        decorator += ", async_callbacks=('dbus_async_cb', 'dbus_async_err_cb')"            
+        decorator += ")"
+        self.class_code.append_stmt(decorator)
+        if (self.signature.has_key('name') and self.signature['name'] != str()):
+            self.add_method(self.signature['name'], async_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+        else:
+            self.add_method(async_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+
+    def add_dbus_signal(self):
+        decorator = '@dbus.service.signal("' + self.ifName + '"'
+        if (self.signature.has_key('in') and self.signature['in'] != str()):
+                decorator += ", signature='" + self.signature['in'] + "'"
+        decorator += ")"            
+        self.class_code.append_stmt(decorator)
+        if (self.signature.has_key('name') and self.signature['name'] != str()):
+            self.add_method(self.signature['name'])
+        else:
+            self.add_method()
+
+    def add_body_method(self):
+        if (self.methodToAdd != None):
+            self.class_code.append_stmt("print 'In " + self.methodToAdd + "()'")
+            if (self.args_str != str()):
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
+            else:        
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "')")
+
+    def add_body_signal(self):
+        self.class_code.append_stmt("return") ## TODO: Remove and fix with code ad hoc
+        self.class_code.append_stmt("\n")
+
+    def add_stmt(self, stmt) :
+        self.class_code.append_stmt(stmt)
+        
+    def declare(self) :
+        self.class_code.compile()
+        exec(self.class_code.exec_string, self.globalCtx, self.localCtx)
+     
+    def __str__(self) :
+        return self.class_code.exec_string
+
+    # p : Since it is often useful to be able to look at the code
+    # that is generated interactively, this function provides
+    # a shorthand for "print str(some_exec_code_instance)", which
+    # gives a reasonable nice look at the contents of the
+    # exec_code object.
+    def p(self) :
+        print str(self)
+        
+################################################################################       
+## END: Class for generating dynamically DBus class (with methods)
+################################################################################       
+
 ###############################################################################
 class CloudeebusService:
     '''
@@ -158,6 +417,8 @@ class CloudeebusService:
         self.proxyObjects = {}
         self.proxyMethods = {}
         self.pendingCalls = []
+        self.dynDBusClass = {} # DBus class source code generated dynamically (a list because one by classname)
+        self.serverObjs = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
 
 
     def proxyObject(self, busName, serviceName, objectName):
@@ -236,6 +497,35 @@ class CloudeebusService:
         return dbusCallHandler.callMethod()
 
 
+    def srvCB(self, name, async_succes_cb, async_error_cb, *args):
+        seconds = 10
+        print "self.srvCB(name='%s', args=%s')\n\n" % (name, str(args))
+        if (async_error_cb != None):
+            t.start()
+            time.sleep(seconds + 2)
+        
+    @exportRpc
+    def createService(self, list):
+        '''
+        arguments: dbusSrvName, objectPath, xml_template
+        '''
+        busName = list[0]
+        srvName = list[1]
+        objectPath = list[2]
+        xml_template = list[3]
+        className = re.sub('/', '_', objectPath[1:])
+        if (self.dynDBusClass.has_key(className) == False):
+            bus = cache.dbusConnexion(busName)
+            dbusSrvName= dbus.service.BusName(name = srvName, bus = bus)
+            self.dynDBusClass[className] = dynDBusClass(className, globals(), locals())
+            self.dynDBusClass[className].createDBusServiceFromXML(xml_template)
+            self.dynDBusClass[className].declare()
+#            self.dynDBusClass[className].p()
+
+            if (self.serverObjs.has_key(className) == False):            
+                exe_str = "self.serverObjs[" + className +"] = " + className + "(bus, callback=self.srvCB, objName=objectPath, busName=srvName)"
+                exec (exe_str, globals(), locals())
+                    
     @exportRpc
     def getVersion(self):
         '''

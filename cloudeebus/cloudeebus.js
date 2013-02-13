@@ -333,3 +333,28 @@ cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
 		cloudeebus.log("Unsubscribe error: " + e);
 	}
 };
+
+/******************* Agent Management ****************************************/
+cloudeebus.createService = function(busName, dbusSrvName, objectPath, busConnection, xml_template) {
+	var self = this; 
+
+	function createServiceSuccessCB(className) {
+		cloudeebus.log("createServiceSuccessCB=: " + className);
+	}
+
+	function createServiceErrorCB(error) {
+		cloudeebus.log("createServiceErrorCB=: " + error.desc);
+	}
+	
+	var arglist = [
+	    busName,
+		dbusSrvName,
+		objectPath,
+		busConnection,
+		xml_template
+	];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	self.wampSession.call("createService", arglist).then(createServiceSuccessCB, createServiceErrorCB);
+};
+/*****************************************************************************/

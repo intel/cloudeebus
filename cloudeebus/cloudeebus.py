@@ -45,6 +45,9 @@ glib.init_threads()
 # enable debug log
 from twisted.python import log
 
+# XML parser module
+from xml.etree.ElementTree import XMLParser
+
 ###############################################################################
 
 VERSION = "0.2.1"
@@ -148,10 +151,6 @@ class DbusCallHandler:
 
 
 
-from xml.etree.ElementTree import XMLParser
-
-################################################################################       
-## BEGIN: Writer code class
 ################################################################################       
 class exec_code:
     def __init__(self) :
@@ -200,12 +199,9 @@ class exec_code:
         if not self.exec_code_valid :
             self.compile()
         exec self.exec_code
-################################################################################       
-## END: Writer code class
-################################################################################       
 
-################################################################################       
-## BEGIN: XML Parser class
+
+
 ################################################################################       
 class XmlCb_Parser: # The target object of the parser
     maxDepth = 0
@@ -255,12 +251,9 @@ class XmlCb_Parser: # The target object of the parser
         pass            # We do not need to do anything with data.
     def close(self):    # Called when all data has been parsed.
         return self.maxDepth
-###############################################################################
-## END: XML Parser class
-###############################################################################
+
+
        
-################################################################################       
-## BEGIN: Class for generating dynamically DBus class (with methods)
 ################################################################################       
 class dynDBusClass():
     def __init__(self, className, globalCtx, localCtx):
@@ -402,10 +395,8 @@ class dynDBusClass():
     # exec_code object.
     def p(self) :
         print str(self)
-        
-################################################################################       
-## END: Class for generating dynamically DBus class (with methods)
-################################################################################       
+
+
 
 ###############################################################################
 class CloudeebusService:
@@ -507,18 +498,18 @@ class CloudeebusService:
     @exportRpc
     def createService(self, list):
         '''
-        arguments: dbusSrvName, objectPath, xml_template
+        arguments: busName, srvName, objectPath, xmlTemplate
         '''
         busName = list[0]
         srvName = list[1]
         objectPath = list[2]
-        xml_template = list[3]
+        xmlTemplate = list[3]
         className = re.sub('/', '_', objectPath[1:])
         if (self.dynDBusClass.has_key(className) == False):
             bus = cache.dbusConnexion(busName)
-            dbusSrvName= dbus.service.BusName(name = srvName, bus = bus)
+            dbus.service.BusName(name = srvName, bus = bus)
             self.dynDBusClass[className] = dynDBusClass(className, globals(), locals())
-            self.dynDBusClass[className].createDBusServiceFromXML(xml_template)
+            self.dynDBusClass[className].createDBusServiceFromXML(xmlTemplate)
             self.dynDBusClass[className].declare()
 #            self.dynDBusClass[className].p()
 

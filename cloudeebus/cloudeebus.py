@@ -143,7 +143,7 @@ class DbusCallHandler:
         '''
         return dbus error message
         '''
-        self.request.errback(error.get_dbus_message())
+        self.request.errback(Exception(error.get_dbus_message()))
         self.pending = False
 
 

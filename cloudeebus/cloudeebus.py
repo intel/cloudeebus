@@ -408,8 +408,9 @@ class CloudeebusService:
         self.proxyObjects = {}
         self.proxyMethods = {}
         self.pendingCalls = []
-        self.dynDBusClass = {} # DBus class source code generated dynamically (a list because one by classname)
-        self.serverObjs = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
+        self.dynDBusClasses = {} # DBus class source code generated dynamically (a list because one by classname)
+        self.services = {}  # DBus service created
+        self.serviceAgents = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
 
 
     def proxyObject(self, busName, serviceName, objectName):
@@ -496,25 +497,33 @@ class CloudeebusService:
             time.sleep(seconds + 2)
         
     @exportRpc
-    def createService(self, list):
+    def serviceAdd(self, list):
         '''
-        arguments: busName, srvName, objectPath, xmlTemplate
+        arguments: busName, srvName
         '''
         busName = list[0]
-        srvName = list[1]
-        objectPath = list[2]
-        xmlTemplate = list[3]
+        self.bus =  cache.dbusConnexion( busName['name'] )
+        self.srvName = list[1]
+        if (self.services.has_key(self.srvName) == False):            
+            self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
+        return self.srvName
+                    
+    @exportRpc
+    def serviceAddAgent(self, list):
+        '''
+        arguments: objectPath, xmlTemplate
+        '''
+        objectPath = list[0]
+        xmlTemplate = list[1]
         className = re.sub('/', '_', objectPath[1:])
-        if (self.dynDBusClass.has_key(className) == False):
-            bus = cache.dbusConnexion(busName)
-            dbus.service.BusName(name = srvName, bus = bus)
-            self.dynDBusClass[className] = dynDBusClass(className, globals(), locals())
-            self.dynDBusClass[className].createDBusServiceFromXML(xmlTemplate)
-            self.dynDBusClass[className].declare()
+        if (self.dynDBusClasses.has_key(className) == False):
+            self.dynDBusClasses[className] = dynDBusClass(className, globals(), locals())
+            self.dynDBusClasses[className].createDBusServiceFromXML(xmlTemplate)
+            self.dynDBusClasses[className].declare()
 #            self.dynDBusClass[className].p()
 
-            if (self.serverObjs.has_key(className) == False):            
-                exe_str = "self.serverObjs[" + className +"] = " + className + "(bus, callback=self.srvCB, objName=objectPath, busName=srvName)"
+            if (self.serviceAgents.has_key(className) == False):            
+                exe_str = "self.serviceAgents[" + className +"] = " + className + "(self.bus, callback=self.srvCB, objName=objectPath, busName=self.srvName)"
                 exec (exe_str, globals(), locals())
                     
     @exportRpc

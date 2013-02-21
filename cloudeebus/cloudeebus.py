@@ -419,6 +419,7 @@ class CloudeebusService:
         self.dynDBusClasses = {} # DBus class source code generated dynamically (a list because one by classname)
         self.services = {}  # DBus service created
         self.serviceAgents = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
+        self.servicePendingCalls = {} # JS methods called (and waiting for a Success/error response), containing 'methodId', (successCB, errorCB)
 
 
     def proxyObject(self, busName, serviceName, objectName):
@@ -497,9 +498,37 @@ class CloudeebusService:
         return dbusCallHandler.callMethod()
 
 
+    @exportRpc
+    def returnMethod(self, list):
+        '''
+        arguments: methodId, success (=true, error otherwise), result (to return)
+        '''
+        methodId = list[0]
+        success = list[1]
+        result = list[2]
+        if (self.servicePendingCalls.has_key(methodId)):
+            cb = self.servicePendingCalls[methodId]
+            if (success):                
+                successCB = cb["successCB"]
+                if (result != None):
+                    successCB(result)
+                else:
+                    successCB()                    
+            else:     
+                errorCB = cb["errorCB"]        
+                if (result != None):
+                    errorCB(result)
+                else:
+                    errorCB()                    
+        
+
     def srvCB(self, name, async_succes_cb, async_error_cb, *args):
         print "self.srvCB(name='%s', args=%s')\n\n" % (name, str(args))
         methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
+        cb = { 'successCB': async_succes_cb, 
+               'errorCB': async_error_cb}
+        self.servicePendingCalls[methodId] = cb
+        
         print "factory.dispatch(methodId='%s', json.dumps(args)=%s')\n\n" % (methodId, json.dumps(args))
         factory.dispatch(methodId, json.dumps(args))
         

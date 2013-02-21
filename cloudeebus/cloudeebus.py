@@ -519,17 +519,16 @@ class CloudeebusService:
                 if (result != None):
                     errorCB(result)
                 else:
-                    errorCB()                    
+                    errorCB()
+        else:
+            print "No methodID %s  !!" % (methodId)                     
         
 
     def srvCB(self, name, async_succes_cb, async_error_cb, *args):
-        print "self.srvCB(name='%s', args=%s')\n\n" % (name, str(args))
         methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
-        self.servicePendingCalls[methodId] = cb
-        
-        print "factory.dispatch(methodId='%s', json.dumps(args)=%s')\n\n" % (methodId, json.dumps(args))
+        self.servicePendingCalls[methodId] = cb       
         factory.dispatch(methodId, json.dumps(args))
         
     @exportRpc

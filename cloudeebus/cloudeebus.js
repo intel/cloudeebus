@@ -223,6 +223,16 @@ cloudeebus.Service.prototype.registerMethod = function(methodId, methodHandler) 
 	self.wampSession.subscribe(methodId, methodHandler);
 };
 
+cloudeebus.Service.prototype.returnMethod = function(methodId, success, result, successCB, errorCB) {
+	var arglist = [
+	    methodId,
+	    success,
+	    result
+	    ];
+
+	    self.wampSession.call("returnMethod", arglist).then(successCB, errorCB);
+};
+
 
 /*****************************************************************************/
 

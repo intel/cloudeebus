@@ -48,6 +48,9 @@ from twisted.python import log
 # XML parser module
 from xml.etree.ElementTree import XMLParser
 
+# For debug only
+import os
+
 ###############################################################################
 
 VERSION = "0.2.1"
@@ -314,24 +317,29 @@ class dynDBusClass():
         if (direction == 'out'):
             self.signature['out'] = signature                        
         
-    def add_method(self, args = None, async_cb = None, async_err_cb = None):
+    def add_method(self, args = None, async_success_cb = None, async_err_cb = None):
+        async_cb_str = str()
         if (self.methodToAdd != None):
             name = self.methodToAdd
         else:
             name = self.signalToAdd
         if (args != None):
             self.args_str = args
-        if (async_cb != None):
-            if (self.args_str != str()):
-                self.args_str += ", "
-            self.args_str += async_cb
+        if (async_success_cb != None):
+            async_cb_str = async_success_cb
         if (async_err_cb != None):
-            if (self.args_str != str()):
-                self.args_str += ", "
-            self.args_str += async_err_cb
+            if (async_cb_str != str()):
+                async_cb_str += ", "
+            async_cb_str += async_err_cb
                         
-        if (self.args_str != str()):
-            self.class_code.append_stmt("def " + name + "(self, %s):" % self.args_str)
+        parameters = self.args_str
+        if (async_cb_str != str()):
+            if (parameters != str()):
+                parameters += ", "
+            parameters +=async_cb_str       
+        
+        if (parameters != str()):
+            self.class_code.append_stmt("def " + name + "(self, %s):" % parameters)               
         else:
             self.class_code.append_stmt("def " + name + "(self):")
         self.class_code.indent()
@@ -351,9 +359,9 @@ class dynDBusClass():
         decorator += ")"
         self.class_code.append_stmt(decorator)
         if (self.signature.has_key('name') and self.signature['name'] != str()):
-            self.add_method(self.signature['name'], async_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+            self.add_method(self.signature['name'], async_success_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
         else:
-            self.add_method(async_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+            self.add_method(async_success_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
 
     def add_dbus_signal(self):
         decorator = '@dbus.service.signal("' + self.ifName + '"'
@@ -372,7 +380,7 @@ class dynDBusClass():
             if (self.args_str != str()):
                 self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
             else:        
-                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "')")
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb)")
 
     def add_body_signal(self):
         self.class_code.append_stmt("return") ## TODO: Remove and fix with code ad hoc
@@ -490,11 +498,10 @@ class CloudeebusService:
 
 
     def srvCB(self, name, async_succes_cb, async_error_cb, *args):
-        seconds = 10
         print "self.srvCB(name='%s', args=%s')\n\n" % (name, str(args))
-        if (async_error_cb != None):
-            t.start()
-            time.sleep(seconds + 2)
+        methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
+        print "factory.dispatch(methodId='%s', json.dumps(args)=%s')\n\n" % (methodId, json.dumps(args))
+        factory.dispatch(methodId, json.dumps(args))
         
     @exportRpc
     def serviceAdd(self, list):
@@ -513,17 +520,28 @@ class CloudeebusService:
         '''
         arguments: objectPath, xmlTemplate
         '''
-        objectPath = list[0]
+        self.agentObjectPath = list[0]
         xmlTemplate = list[1]
-        className = re.sub('/', '_', objectPath[1:])
+        className = re.sub('/', '_', self.agentObjectPath[1:])
         if (self.dynDBusClasses.has_key(className) == False):
             self.dynDBusClasses[className] = dynDBusClass(className, globals(), locals())
             self.dynDBusClasses[className].createDBusServiceFromXML(xmlTemplate)
-            self.dynDBusClasses[className].declare()
-#            self.dynDBusClass[className].p()
-
+            
+            # For Debug only
+            if (1):
+                if (1): ## Force deletion
+                    if os.access('./MyDbusClass.py', os.R_OK) == True:
+                        os.remove('./MyDbusClass.py')
+                    
+                    if os.access('./MyDbusClass.py', os.R_OK) == False:
+                        f = open('./MyDbusClass.py', 'w')
+                        f.write(self.dynDBusClasses[className].class_code.exec_string)
+                        f.close()
+#                self.dynDBusClass[className].p()
+                self.dynDBusClasses[className].declare()
+            
             if (self.serviceAgents.has_key(className) == False):            
-                exe_str = "self.serviceAgents[" + className +"] = " + className + "(self.bus, callback=self.srvCB, objName=objectPath, busName=self.srvName)"
+                exe_str = "self.serviceAgents[" + className +"] = " + className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)"
                 exec (exe_str, globals(), locals())
                     
     @exportRpc

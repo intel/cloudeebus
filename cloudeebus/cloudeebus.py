@@ -541,8 +541,23 @@ class CloudeebusService:
         self.srvName = list[1]
         if (self.services.has_key(self.srvName) == False):            
             self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
-        return self.srvName
-                    
+            return self.srvName
+
+    @exportRpc
+    def serviceRelease(self, list):
+        '''
+        arguments: busName, srvName
+        '''
+        busName = list[0]
+        self.bus =  cache.dbusConnexion( busName['name'] )
+        self.srvName = list[1]
+        if (self.services.has_key(self.srvName) == True):
+            exe_str = "self.services['" + self.srvName +"']"
+            exec (exe_str, globals(), locals())
+            return self.srvName
+        else:
+            raise Exception(self.srvName + " do not exist")
+                   
     @exportRpc
     def serviceAddAgent(self, list):
         '''
@@ -550,10 +565,10 @@ class CloudeebusService:
         '''
         self.agentObjectPath = list[0]
         xmlTemplate = list[1]
-        className = re.sub('/', '_', self.agentObjectPath[1:])
-        if (self.dynDBusClasses.has_key(className) == False):
-            self.dynDBusClasses[className] = dynDBusClass(className, globals(), locals())
-            self.dynDBusClasses[className].createDBusServiceFromXML(xmlTemplate)
+        self.className = re.sub('/', '_', self.agentObjectPath[1:])
+        if (self.dynDBusClasses.has_key(self.className) == False):
+            self.dynDBusClasses[self.className] = dynDBusClass(self.className, globals(), locals())
+            self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
             
             # For Debug only
             if (1):
@@ -563,14 +578,32 @@ class CloudeebusService:
                     
                     if os.access('./MyDbusClass.py', os.R_OK) == False:
                         f = open('./MyDbusClass.py', 'w')
-                        f.write(self.dynDBusClasses[className].class_code.exec_string)
+                        f.write(self.dynDBusClasses[self.className].class_code.exec_string)
                         f.close()
 #                self.dynDBusClass[className].p()
-                self.dynDBusClasses[className].declare()
+                self.dynDBusClasses[self.className].declare()
             
-            if (self.serviceAgents.has_key(className) == False):            
-                exe_str = "self.serviceAgents[" + className +"] = " + className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)"
+            if (self.serviceAgents.has_key(self.className) == False):            
+                exe_str = "self.serviceAgents['" + self.className +"'] = " + self.className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)"
                 exec (exe_str, globals(), locals())
+                return (self.agentObjectPath)
+        else:
+            raise Exception(self.agentObjectPath + " already exist !!")
+                    
+    @exportRpc
+    def serviceDelAgent(self, list):
+        '''
+        arguments: objectPath, xmlTemplate
+        '''
+        agentObjectPath = list[0]
+        className = re.sub('/', '_', agentObjectPath[1:])
+
+        if (self.serviceAgents.has_key(className)):            
+            exe_str = "self.serviceAgents['" + className +"'] = None"
+            exec (exe_str, globals(), locals())
+            return (self.className)
+        else:
+            raise Exception(agentObjectPath + "doesn't exist!")
                     
     @exportRpc
     def getVersion(self):

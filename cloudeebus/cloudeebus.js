@@ -120,6 +120,7 @@ cloudeebus.SystemBus = function() {
 cloudeebus.BusConnection = function(name, session) {
 	this.name = name;
 	this.wampSession = session;
+	this.service = null;
 	return this;
 };
 
@@ -131,6 +132,112 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 	return proxy;
 };
 
+
+cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB, errorCB) {
+	var self = this;
+	
+	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
+	
+	function busServiceAddedSuccessCB(service) {
+		self.service = service;
+		if (successCB)
+			successCB(cloudeebusService);
+	}
+	
+	function busServiceAddedErrorCB(error) {
+		if (errorCB)
+			errorCB();
+	}
+	
+	cloudeebusService.add(busServiceAddedSuccessCB, busServiceAddedErrorCB);
+};
+
+
+/*****************************************************************************/
+
+cloudeebus.Service = function(session, busConnection, name) {
+	this.wampSession = session;
+	this.busConnection = busConnection; 
+	this.name = name;
+	this.isCreated = false;
+	return this;
+};
+
+cloudeebus.Service.prototype.add = function(successCB, errorCB) {
+	function ServiceAddSuccessCB(dbusService) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(dbusService);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    this.busConnection,
+	    this.name
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceAdd", arglist).then(ServiceAddSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, successCB, errorCB) {
+	function ServiceAddAgentSuccessCB(dbusService) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(dbusService);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    objectPath,
+	    xmlTemplate
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceAddAgent", arglist).then(ServiceAddAgentSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.delAgent = function(objectPath, successCB, errorCB) {
+	function ServiceDelAgentSuccessCB(agent) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(agent);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    objectPath
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceDelAgent", arglist).then(ServiceDelAgentSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.registerMethod = function(methodId, methodHandler) {
+	this.wampSession.subscribe(methodId, methodHandler);
+};
+
+cloudeebus.Service.prototype.returnMethod = function(methodId, success, result, successCB, errorCB) {
+	var arglist = [
+	    methodId,
+	    success,
+	    result
+	    ];
+
+	this.wampSession.call("returnMethod", arglist).then(successCB, errorCB);
+};
 
 
 /*****************************************************************************/
@@ -333,28 +440,3 @@ cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
 		cloudeebus.log("Unsubscribe error: " + e);
 	}
 };
-
-/******************* Agent Management ****************************************/
-cloudeebus.createService = function(busName, dbusSrvName, objectPath, busConnection, xml_template) {
-	var self = this; 
-
-	function createServiceSuccessCB(className) {
-		cloudeebus.log("createServiceSuccessCB=: " + className);
-	}
-
-	function createServiceErrorCB(error) {
-		cloudeebus.log("createServiceErrorCB=: " + error.desc);
-	}
-	
-	var arglist = [
-	    busName,
-		dbusSrvName,
-		objectPath,
-		busConnection,
-		xml_template
-	];
-
-	// call dbusSend with bus type, destination, object, message and arguments
-	self.wampSession.call("createService", arglist).then(createServiceSuccessCB, createServiceErrorCB);
-};
-/*****************************************************************************/

@@ -185,10 +185,10 @@ cloudeebus.Service.prototype.add = function(successCB, errorCB) {
 };
 
 cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, successCB, errorCB) {
-	function ServiceAddAgentSuccessCB(dbusService) {
+	function ServiceAddAgentSuccessCB(objPath) {
 		if (successCB) {
 			try { // calling dbus hook object function for un-translated types
-				successCB(dbusService);
+				successCB(objPath);
 			}
 			catch (e) {
 				alert(arguments.callee.name + "-> Method callback exception: " + e);

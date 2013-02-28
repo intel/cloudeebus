@@ -520,17 +520,71 @@ class CloudeebusService:
                     errorCB(result)
                 else:
                     errorCB()
+            self.servicePendingCalls[methodId] = None
         else:
-            print "No methodID %s  !!" % (methodId)                     
-        
+            print "No methodID %s  !!" % (methodId)  
+
+    def jsonEncodeTupleKeyDict(self, data):
+        ndict = dict()
+        # creates new dictionary with the original tuple converted to json string
+        dataLen = len(data)
+        string = ""
+        for index in range(dataLen):
+            for key in data[index]:
+                value = data[index][key]
+                print "key=" + key
+                print "value=" + str(value)
+                nkey = str(key)
+                nvalue = ""
+                print "JSON key=" + nkey
+                if (isinstance(value, dbus.Array)):
+                    # Searching dbus byte in array...
+                    ValueLen = len(value)
+                    nvalue = []
+                    for indexValue in range(ValueLen):
+                        a = value[indexValue]
+                        if (isinstance(a, dbus.Byte)):
+                            a = int(value[indexValue])
+                            nvalue.append(a)
+                        else:
+                            nvalue = str(value[indexValue])
+                            
+                print "JSON value=" + str(nvalue)                
+                ndict[nkey] =  nvalue
+
+        return ndict
 
     def srvCB(self, name, async_succes_cb, async_error_cb, *args):
         methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
-        self.servicePendingCalls[methodId] = cb       
-        factory.dispatch(methodId, json.dumps(args))
-        
+        self.servicePendingCalls[methodId] = cb
+
+        print "Received args=%s" % (args)                     
+        try:               
+            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, json.dumps(args))                     
+            factory.dispatch(methodId, json.dumps(args))
+            return
+        except Exception, e :
+            print "Error=%s" % (str(e))
+            
+        print "Trying to decode dbus.Dictionnary..."
+        try:
+            params = self.jsonEncodeTupleKeyDict(args)                
+            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, params)                     
+            factory.dispatch(methodId, params)
+            return
+        except Exception, e :
+            print "Error=%s" % (str(e))
+                    
+        print "Trying to pass args as string..."
+        try:               
+            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, str(args))                     
+            factory.dispatch(methodId, str(args))
+            return
+        except Exception, e :
+            print "Error=%s" % (str(e))
+                    
     @exportRpc
     def serviceAdd(self, list):
         '''
@@ -583,7 +637,7 @@ class CloudeebusService:
 #                self.dynDBusClass[className].p()
                 self.dynDBusClasses[self.className].declare()
             
-            if (self.serviceAgents.has_key(self.className) == False):            
+            if (self.serviceAgents.has_key(self.className) == False):
                 exe_str = "self.serviceAgents['" + self.className +"'] = " + self.className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)"
                 exec (exe_str, globals(), locals())
                 return (self.agentObjectPath)

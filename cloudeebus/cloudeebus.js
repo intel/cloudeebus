@@ -140,7 +140,13 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.busConnection = busConnection; 
 	this.busName = busName; 
 	this.objectPath = objectPath; 
+	this.interfaceProxies = {};
 	return this;
+};
+
+
+cloudeebus.ProxyObject.prototype.getInterface = function(ifName) {
+	return this.interfaceProxies[ifName];
 };
 
 
@@ -149,16 +155,18 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	var self = this; 
 
 	function getAllPropertiesSuccessCB(props) {
+		var ifProxy = self.interfaceProxies[self.propInterfaces[self.propInterfaces.length-1]];
 		for (var prop in props)
-			self[prop] = props[prop];
+			ifProxy[prop] = self[prop] = props[prop];
 		getAllPropertiesNextInterfaceCB();
 	}
 	
 	function getAllPropertiesNextInterfaceCB() {
+		self.propInterfaces.pop();
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces.pop()], 
+				[self.propInterfaces[self.propInterfaces.length-1]], 
 				getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
@@ -176,6 +184,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		var supportDBusProperties = false;
 		for (var i=0; i < interfaces.length; i++) {
 			var ifName = interfaces[i].attributes.getNamedItem("name").value;
+			self.interfaceProxies[ifName] = new cloudeebus.ProxyObject(self.wampSession, self.busConnection, self.busName, self.objectPath);
 			if (ifName == "org.freedesktop.DBus.Properties")
 				supportDBusProperties = true;
 			var hasProperties = false;
@@ -193,6 +202,9 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 					self._addMethod(ifName, 
 							ifChild.attributes.getNamedItem("name").value, 
 							nArgs);
+					self.interfaceProxies[ifName]._addMethod(ifName, 
+							ifChild.attributes.getNamedItem("name").value, 
+							nArgs);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -205,7 +217,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces.pop()], 
+				[self.propInterfaces[self.propInterfaces.length-1]], 
 				getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}

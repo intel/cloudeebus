@@ -199,12 +199,10 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 								nArgs++;
 						metChild = metChild.nextSibling;
 					}
-					self._addMethod(ifName, 
-							ifChild.attributes.getNamedItem("name").value, 
-							nArgs);
-					self.interfaceProxies[ifName]._addMethod(ifName, 
-							ifChild.attributes.getNamedItem("name").value, 
-							nArgs);
+					var metName = ifChild.attributes.getNamedItem("name").value;
+					if (!self[metName])
+						self._addMethod(ifName, metName, nArgs);
+					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)

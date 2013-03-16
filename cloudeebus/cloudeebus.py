@@ -47,7 +47,7 @@ from twisted.python import log
 
 ###############################################################################
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []

@@ -50,7 +50,7 @@ Examples
 The /doc/dbus-tools folder contains dbus-send and dbus-register test pages.
 Cloudeebus runs in opendoor mode, the dbus-tools pages have no manifest.
 
-	cloudeebus.py --debug --opendoor &
+	cloudeebus.py --debug --opendoor --port=9001 &
 	firefox ./doc/dbus-tools/dbus-register.html ./doc/dbus-tools/dbus-send.html &
 
 ### sample

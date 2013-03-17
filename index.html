@@ -17,7 +17,7 @@
    <body>
         <center><h1><a href="https://github.com/01org/cloudeebus">cloudeebus</a></h1></center>
         <br>
-		<textarea cols="80" rows=24 id="script">
+		<textarea style="width:80%" rows="32" id="script">
 var manifest = {
 	name: "cloudeebus",
 	key: "secret",
@@ -40,7 +40,9 @@ function logCB(result) {
 }
 
 function gotNotifProxy(proxy) {
-  proxy.Notify("Cloudeebus",0,"","Cloudeebus says:", "Hello, world !", [], {}, 0);
+  for (var ifproxy in proxy.interfaceProxies)
+    cloudeebus.log(ifproxy);
+  proxy.getInterface("org.freedesktop.Notifications").Notify("Cloudeebus",0,"","Cloudeebus says:", "Hello, world !", [], {}, 0);
 }
 
 function gotBusProxy(proxy) {

@@ -138,18 +138,28 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB,
 	
 	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
 	
-	function busServiceAddedSuccessCB(service) {
-		self.service = service;
+	function busServiceAddedSuccessCB(serviceName) {
+		self.service = cloudeebusService;
 		if (successCB)
-			successCB(cloudeebusService);
+			successCB(serviceName);
 	}
 	
-	function busServiceAddedErrorCB(error) {
-		if (errorCB)
-			errorCB();
+	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
+};
+
+cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {
+	var self = this;
+	
+	function busServiceRemovedSuccessCB(serviceName) {
+		// Be sure we are removing the service requested...
+		if (serviceName == self.service.name) {
+			self.service = null;
+			if (successCB)
+				successCB(serviceName);
+		}
 	}
 	
-	cloudeebusService.add(busServiceAddedSuccessCB, busServiceAddedErrorCB);
+	cloudeebusService.remove(busServiceRemovedSuccessCB, errorCB);
 };
 
 
@@ -164,10 +174,10 @@ cloudeebus.Service = function(session, busConnection, name) {
 };
 
 cloudeebus.Service.prototype.add = function(successCB, errorCB) {
-	function ServiceAddSuccessCB(dbusService) {
+	function ServiceAddedSuccessCB(serviceName) {
 		if (successCB) {
 			try { // calling dbus hook object function for un-translated types
-				successCB(dbusService);
+				successCB(serviceName);
 			}
 			catch (e) {
 				alert(arguments.callee.name + "-> Method callback exception: " + e);
@@ -181,7 +191,27 @@ cloudeebus.Service.prototype.add = function(successCB, errorCB) {
 	    ];
 
 	// call dbusSend with bus type, destination, object, message and arguments
-	this.wampSession.call("serviceAdd", arglist).then(ServiceAddSuccessCB, errorCB);
+	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
+	function ServiceRemovedSuccessCB(serviceName) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(serviceName);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    this.name
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceRelease", arglist).then(ServiceRemovedSuccessCB, errorCB);
 };
 
 cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, successCB, errorCB) {

@@ -156,13 +156,16 @@ class DbusCallHandler:
 
 ################################################################################       
 class exec_code:
-    def __init__(self) :
+    def __init__(self, globalCtx, localCtx) :
         self.exec_string = ""
         self.exec_code = None
         self.exec_code_valid = 1
         self.indent_level = 0
         self.indent_increment = 1
         self.line = 0
+        self.localCtx = localCtx
+        self.globalCtx = globalCtx
+        
 
     # __str__ : Return a string representation of the object, for
     # nice printing.
@@ -196,12 +199,12 @@ class exec_code:
     def compile(self) :
         if not self.exec_code_valid :
             self.exec_code = compile(self.exec_string, "<string>", "exec")
-        self.exec_code_valid = 1
+        self.exec_code_valid = True
 
     def execute(self) :
         if not self.exec_code_valid :
             self.compile()
-        exec self.exec_code
+        exec(self.exec_code, self.globalCtx, self.localCtx)
 
 
 
@@ -262,10 +265,8 @@ class dynDBusClass():
     def __init__(self, className, globalCtx, localCtx):
         self.className = className
         self.xmlCB = XmlCb_Parser(self)
-        self.localCtx = localCtx
-        self.globalCtx = globalCtx        
         self.signature = {}
-        self.class_code = exec_code()  
+        self.class_code = exec_code(globalCtx, localCtx)  
         self.class_code.indent_increment = 4
         self.class_code.append_stmt("import dbus")
         self.class_code.append_stmt("\n")
@@ -279,7 +280,20 @@ class dynDBusClass():
         self.add_stmt("self.bus = bus")
         self.add_stmt("self.objName = objName")
         self.add_stmt("self.callback = callback")        
-        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, object_path=objName, bus_name=busName)")
+#        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, object_path=objName, bus_name=busName)")
+        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, bus_name=busName)")
+        self.end_method()
+               
+        ## Create 'add_to_connection' method 
+        self.def_method("add_to_connection")
+        self.add_method("connection=None, path=None")
+        self.add_stmt("dbus.service.Object.add_to_connection(self, connection=self.bus, path=self.objName)")
+        self.end_method()
+               
+        ## Create 'remove_from_connection' method 
+        self.def_method("remove_from_connection")
+        self.add_method("connection=None, path=None")
+        self.add_stmt("dbus.service.Object.remove_from_connection(self, connection=None, path=self.objName)")
         self.end_method()
                
     def createDBusServiceFromXML(self, xml):
@@ -390,8 +404,7 @@ class dynDBusClass():
         self.class_code.append_stmt(stmt)
         
     def declare(self) :
-        self.class_code.compile()
-        exec(self.class_code.exec_string, self.globalCtx, self.localCtx)
+        self.class_code.execute()
      
     def __str__(self) :
         return self.class_code.exec_string
@@ -420,6 +433,8 @@ class CloudeebusService:
         self.services = {}  # DBus service created
         self.serviceAgents = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
         self.servicePendingCalls = {} # JS methods called (and waiting for a Success/error response), containing 'methodId', (successCB, errorCB)
+        self.localCtx = locals()
+        self.globalCtx = globals()
 
 
     def proxyObject(self, busName, serviceName, objectName):
@@ -560,7 +575,11 @@ class CloudeebusService:
                'errorCB': async_error_cb}
         self.servicePendingCalls[methodId] = cb
 
-        print "Received args=%s" % (args)                     
+        if (len(args) > 0):
+            print "Received args=%s" % (args)
+        else:                     
+            print "No args received"
+            
         try:               
             print "factory.dispatch(methodId=%s, args=%s)" % (methodId, json.dumps(args))                     
             factory.dispatch(methodId, json.dumps(args))
@@ -595,19 +614,16 @@ class CloudeebusService:
         self.srvName = list[1]
         if (self.services.has_key(self.srvName) == False):            
             self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
-            return self.srvName
+        return self.srvName
 
     @exportRpc
     def serviceRelease(self, list):
         '''
         arguments: busName, srvName
         '''
-        busName = list[0]
-        self.bus =  cache.dbusConnexion( busName['name'] )
-        self.srvName = list[1]
+        self.srvName = list[0]
         if (self.services.has_key(self.srvName) == True):
-            exe_str = "self.services['" + self.srvName +"']"
-            exec (exe_str, globals(), locals())
+            self.services.pop(self.srvName)
             return self.srvName
         else:
             raise Exception(self.srvName + " do not exist")
@@ -621,8 +637,9 @@ class CloudeebusService:
         xmlTemplate = list[1]
         self.className = re.sub('/', '_', self.agentObjectPath[1:])
         if (self.dynDBusClasses.has_key(self.className) == False):
-            self.dynDBusClasses[self.className] = dynDBusClass(self.className, globals(), locals())
+            self.dynDBusClasses[self.className] = dynDBusClass(self.className, self.globalCtx, self.localCtx)
             self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
+            self.dynDBusClasses[self.className].declare()
             
             # For Debug only
             if (1):
@@ -634,15 +651,17 @@ class CloudeebusService:
                         f = open('./MyDbusClass.py', 'w')
                         f.write(self.dynDBusClasses[self.className].class_code.exec_string)
                         f.close()
-#                self.dynDBusClass[className].p()
-                self.dynDBusClasses[self.className].declare()
+
+        ## Class already exist, instanciate it if not already instanciated
+        if (self.serviceAgents.has_key(self.className) == False):
+#            self.dynDBusClasses[self.className].p()
+#            self.dynDBusClasses[self.className].declare()
+            self.serviceAgents[self.className] = eval(self.className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
             
-            if (self.serviceAgents.has_key(self.className) == False):
-                exe_str = "self.serviceAgents['" + self.className +"'] = " + self.className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)"
-                exec (exe_str, globals(), locals())
-                return (self.agentObjectPath)
-        else:
-            raise Exception(self.agentObjectPath + " already exist !!")
+        self.serviceAgents[self.className].add_to_connection()
+#        exe_str = "self.serviceAgents['" + self.className +"'].add_to_connection()"
+#        exec (exe_str, self.globalCtx, self.localCtx)
+        return (self.agentObjectPath)
                     
     @exportRpc
     def serviceDelAgent(self, list):
@@ -652,12 +671,13 @@ class CloudeebusService:
         agentObjectPath = list[0]
         className = re.sub('/', '_', agentObjectPath[1:])
 
-        if (self.serviceAgents.has_key(className)):            
-            exe_str = "self.serviceAgents['" + className +"'] = None"
-            exec (exe_str, globals(), locals())
-            return (self.className)
+        if (self.serviceAgents.has_key(className)):
+            self.serviceAgents[self.className].remove_from_connection()
+            self.serviceAgents.pop(self.className)
         else:
-            raise Exception(agentObjectPath + "doesn't exist!")
+            raise Exception(agentObjectPath + " doesn't exist!")
+        
+        return (agentObjectPath)
                     
     @exportRpc
     def getVersion(self):

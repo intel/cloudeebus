@@ -1,6 +1,5 @@
 Distribution:
 -------------
-- port on node.js, distribute as a node.js module
 - yocto layer
 - investigate javascript library minimizing / obfuscation.
 
@@ -14,9 +13,15 @@ Proxy object properties:
 API style:
 ----------
 - use "Promises" pattern for asynchronous APIs 
+- support adding DBus signatures / force JSON description of numbers as floats when needed 
 
 
 DBus service support:
 ---------------------
 - support publishing a DBus service
+- support sending signals
 
+
+Access control:
+---------------
+- support restrictions on websocket origin domain

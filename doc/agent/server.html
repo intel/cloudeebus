@@ -17,7 +17,7 @@
    <body>
         <center><h1>cloudeebus</h1></center>
         <br>
-		<textarea style="width:80%" rows="32" id="script">
+		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method></interface></node>';
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -30,8 +30,20 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+function releaseCalled() {
+  cloudeebus.log("Release method called");
+  cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release", true, null);
+  cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
+  cloudeebus.SessionBus().service.remove(logCB, errorCB);
+}
+
+function serviceAdded(servName) {
+  cloudeebus.SessionBus().service.registerMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release",releaseCalled);
+  cloudeebus.SessionBus().service.addAgent("/org/cloudeebus/Sample", sampleXml, logCB, errorCB);
+}
+
 function connectSuccess() {
-  cloudeebus.SessionBus().addService("org.cloudeebus.Sample", logCB, errorCB);
+  cloudeebus.SessionBus().addService("org.cloudeebus.Sample", serviceAdded, errorCB);
 }
 
 cloudeebus.connect("ws://localhost:9003", null, connectSuccess, errorCB);

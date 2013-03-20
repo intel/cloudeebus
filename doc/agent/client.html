@@ -38,8 +38,13 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+function gotProxy(proxy) {
+  logCB(proxy);
+  proxy.Release();
+}
+
 function connectSuccess() {
-  cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", logCB, errorCB);
+  cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
 }
 
 cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);

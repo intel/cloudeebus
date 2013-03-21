@@ -576,7 +576,7 @@ class CloudeebusService:
         self.servicePendingCalls[methodId] = cb
 
         if (len(args) > 0):
-            print "Received args=%s" % (args)
+            print "Received args=%s" % (str(args))
         else:                     
             print "No args received"
             

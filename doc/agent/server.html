@@ -17,7 +17,7 @@
    <body>
         <center><h1>cloudeebus</h1></center>
         <br>
-		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method></interface></node>';
+		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method></interface></node>';
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -30,6 +30,12 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+function addCalled(args) {
+var args = JSON.parse(arguments[1]);
+  cloudeebus.log("Add method called: " + args[0] + " + " + args[1]);
+  cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Add", true, args[0] + args[1]);
+}
+
 function releaseCalled() {
   cloudeebus.log("Release method called");
   cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release", true, null);
@@ -39,6 +45,7 @@ function releaseCalled() {
 }
 
 function serviceAdded(servName) {
+  cloudeebus.SessionBus().service.registerMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Add",addCalled);
   cloudeebus.SessionBus().service.registerMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release",releaseCalled);
   cloudeebus.SessionBus().service.addAgent("/org/cloudeebus/Sample", sampleXml, logCB, errorCB);
 }

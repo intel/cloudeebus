@@ -26,6 +26,8 @@ var manifest = {
 	]
 };
 
+var sampleProxy = null;
+
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -38,9 +40,15 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+function gotAddResult(aSum) {
+  cloudeebus.log("gotAddResult: " + aSum);
+//  sampleProxy.Release();
+}
+
 function gotProxy(proxy) {
   logCB(proxy);
-  proxy.Release();
+  proxy.Add(32,16,gotAddResult,errorCB);
+  sampleProxy = proxy;
 }
 
 function connectSuccess() {

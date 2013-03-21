@@ -33,6 +33,7 @@ function errorCB(error) {
 function releaseCalled() {
   cloudeebus.log("Release method called");
   cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release", true, null);
+  cloudeebus.SessionBus().service.wampSession.unsubscribe("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release");  
   cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
   cloudeebus.SessionBus().service.remove(logCB, errorCB);
 }

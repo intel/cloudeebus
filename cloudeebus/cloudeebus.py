@@ -235,6 +235,8 @@ class XmlCb_Parser: # The target object of the parser
         # Set signature (in/out & name) for method
         if (tag == 'arg'):
             if (self.current == 'method'):
+                if (attrib.has_key('direction') == False):
+                    attrib['direction'] = "in"
                 self.dynDBusClass.add_signature(attrib['name'],
                                                 attrib['direction'],
                                                 attrib['type'])
@@ -576,7 +578,7 @@ class CloudeebusService:
         self.servicePendingCalls[methodId] = cb
 
         if (len(args) > 0):
-            print "Received args=%s" % (args)
+            print "Received args=%s" % (str(args))
         else:                     
             print "No args received"
             

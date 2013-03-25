@@ -165,14 +165,6 @@ class exec_code:
         self.globalCtx = globalCtx
         
 
-    # __str__ : Return a string representation of the object, for
-    # nice printing.
-    def __str__(self) :
-        return self.exec_string
-
-    def p(self) :
-        print str(self)
-
     def append_stmt(self, stmt) :
         self.exec_code_valid = 0
         self.line += 1
@@ -405,17 +397,6 @@ class dynDBusClass():
         
     def declare(self) :
         self.class_code.execute()
-     
-    def __str__(self) :
-        return self.class_code.exec_string
-
-    # p : Since it is often useful to be able to look at the code
-    # that is generated interactively, this function provides
-    # a shorthand for "print str(some_exec_code_instance)", which
-    # gives a reasonable nice look at the contents of the
-    # exec_code object.
-    def p(self) :
-        print str(self)
 
 
 

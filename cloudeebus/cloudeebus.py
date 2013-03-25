@@ -513,70 +513,12 @@ class CloudeebusService:
         else:
             raise Exception("No methodID " + methodId)
 
-    def jsonEncodeTupleKeyDict(self, data):
-        ndict = dict()
-        # creates new dictionary with the original tuple converted to json string
-        dataLen = len(data)
-        string = ""
-        for index in range(dataLen):
-            for key in data[index]:
-                value = data[index][key]
-                print "key=" + key
-                print "value=" + str(value)
-                nkey = str(key)
-                nvalue = ""
-                print "JSON key=" + nkey
-                if (isinstance(value, dbus.Array)):
-                    # Searching dbus byte in array...
-                    ValueLen = len(value)
-                    nvalue = []
-                    for indexValue in range(ValueLen):
-                        a = value[indexValue]
-                        if (isinstance(a, dbus.Byte)):
-                            a = int(value[indexValue])
-                            nvalue.append(a)
-                        else:
-                            nvalue = str(value[indexValue])
-                            
-                print "JSON value=" + str(nvalue)                
-                ndict[nkey] =  nvalue
-
-        return ndict
-
     def srvCB(self, name, async_succes_cb, async_error_cb, *args):
         methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
         self.servicePendingCalls[methodId] = cb
-
-        if (len(args) > 0):
-            print "Received args=%s" % (str(args))
-        else:                     
-            print "No args received"
-            
-        try:               
-            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, json.dumps(args))                     
-            factory.dispatch(methodId, json.dumps(args))
-            return
-        except Exception, e :
-            print "Error=%s" % (str(e))
-            
-        print "Trying to decode dbus.Dictionnary..."
-        try:
-            params = self.jsonEncodeTupleKeyDict(args)                
-            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, params)                     
-            factory.dispatch(methodId, params)
-            return
-        except Exception, e :
-            print "Error=%s" % (str(e))
-                    
-        print "Trying to pass args as string..."
-        try:               
-            print "factory.dispatch(methodId=%s, args=%s)" % (methodId, str(args))                     
-            factory.dispatch(methodId, str(args))
-            return
-        except Exception, e :
-            print "Error=%s" % (str(e))
+        factory.dispatch(methodId, json.dumps(args))
                     
     @exportRpc
     def serviceAdd(self, list):

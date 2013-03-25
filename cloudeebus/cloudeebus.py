@@ -153,7 +153,10 @@ class DbusCallHandler:
 
 
 ################################################################################       
-class exec_code:
+class ExecCode:
+    '''
+    Execute DynDBusClass generated code
+    '''
     def __init__(self, globalCtx, localCtx) :
         self.exec_string = ""
         self.exec_code = None
@@ -193,7 +196,7 @@ class exec_code:
 
 
 ################################################################################       
-class XmlCb_Parser: # The target object of the parser
+class XmlCbParser: # The target object of the parser
     maxDepth = 0
     depth = 0
     def __init__(self, dynDBusClass):
@@ -247,12 +250,12 @@ class XmlCb_Parser: # The target object of the parser
 
        
 ################################################################################       
-class dynDBusClass():
+class DynDBusClass():
     def __init__(self, className, globalCtx, localCtx):
         self.className = className
-        self.xmlCB = XmlCb_Parser(self)
+        self.xmlCB = XmlCbParser(self)
         self.signature = {}
-        self.class_code = exec_code(globalCtx, localCtx)  
+        self.class_code = ExecCode(globalCtx, localCtx)  
         self.class_code.indent_increment = 4
         self.class_code.append_stmt("import dbus")
         self.class_code.append_stmt("\n")
@@ -608,7 +611,7 @@ class CloudeebusService:
         xmlTemplate = list[1]
         self.className = re.sub('/', '_', self.agentObjectPath[1:])
         if (self.dynDBusClasses.has_key(self.className) == False):
-            self.dynDBusClasses[self.className] = dynDBusClass(self.className, self.globalCtx, self.localCtx)
+            self.dynDBusClasses[self.className] = DynDBusClass(self.className, self.globalCtx, self.localCtx)
             self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
             self.dynDBusClasses[self.className].declare()
 

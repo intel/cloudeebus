@@ -168,15 +168,9 @@ class exec_code:
     def append_stmt(self, stmt) :
         self.exec_code_valid = 0
         self.line += 1
-        if (stmt != "\n"):
-            for x in range(0,self.indent_level):
-                self.exec_string = self.exec_string + ' '            
-            self.exec_string = self.exec_string + stmt + "\t\t# l:" + str(self.line) + '\n'
-        else:
-            if (stmt == "\n"):
-                self.exec_string = self.exec_string + "# l:" + str(self.line) + '\n'
-            else:
-                self.exec_string = self.exec_string + stmt + "\t\t# l:" + str(self.line) + '\n'
+        for x in range(0,self.indent_level):
+            self.exec_string = self.exec_string + ' '            
+        self.exec_string = self.exec_string + stmt + '\n'
 
     def indent(self) :
         self.indent_level = self.indent_level + self.indent_increment
@@ -262,7 +256,6 @@ class dynDBusClass():
         self.class_code.indent_increment = 4
         self.class_code.append_stmt("import dbus")
         self.class_code.append_stmt("\n")
-        self.class_code.append_stmt("\n")
         self.class_code.append_stmt("class " + self.className + "(dbus.service.Object):")
         self.class_code.indent()
         
@@ -272,7 +265,6 @@ class dynDBusClass():
         self.add_stmt("self.bus = bus")
         self.add_stmt("self.objName = objName")
         self.add_stmt("self.callback = callback")        
-#        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, object_path=objName, bus_name=busName)")
         self.add_stmt("dbus.service.Object.__init__(self, conn=bus, bus_name=busName)")
         self.end_method()
                
@@ -352,7 +344,6 @@ class dynDBusClass():
         
     def end_method(self):
         self.class_code.append_stmt("\n")
-        self.class_code.append_stmt("\n")        
         self.class_code.dedent()
         
     def add_dbus_method(self):

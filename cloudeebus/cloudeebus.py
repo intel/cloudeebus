@@ -656,13 +656,9 @@ class CloudeebusService:
 
         ## Class already exist, instanciate it if not already instanciated
         if (self.serviceAgents.has_key(self.className) == False):
-#            self.dynDBusClasses[self.className].p()
-#            self.dynDBusClasses[self.className].declare()
             self.serviceAgents[self.className] = eval(self.className + "(self.bus, callback=self.srvCB, objName=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
             
         self.serviceAgents[self.className].add_to_connection()
-#        exe_str = "self.serviceAgents['" + self.className +"'].add_to_connection()"
-#        exec (exe_str, self.globalCtx, self.localCtx)
         return (self.agentObjectPath)
                     
     @exportRpc

@@ -373,7 +373,6 @@ class dynDBusClass():
 
     def add_body_method(self):
         if (self.methodToAdd != None):
-            self.class_code.append_stmt("print 'In " + self.methodToAdd + "()'")
             if (self.args_str != str()):
                 self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
             else:        

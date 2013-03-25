@@ -508,7 +508,7 @@ class CloudeebusService:
                     errorCB()
             self.servicePendingCalls[methodId] = None
         else:
-            print "No methodID %s  !!" % (methodId)  
+            raise Exception("No methodID " + methodId)
 
     def jsonEncodeTupleKeyDict(self, data):
         ndict = dict()

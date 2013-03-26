@@ -509,7 +509,7 @@ class CloudeebusService:
                     errorCB(result)
                 else:
                     errorCB()
-            self.servicePendingCalls[methodId] = None
+            del self.servicePendingCalls[methodId]
         else:
             raise Exception("No methodID " + methodId)
 

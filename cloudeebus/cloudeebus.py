@@ -490,13 +490,16 @@ class CloudeebusService:
     @exportRpc
     def returnMethod(self, list):
         '''
-        arguments: methodId, success (=true, error otherwise), result (to return)
+        arguments: methodId, callIndex, success (=true, error otherwise), result (to return)
         '''
         methodId = list[0]
-        success = list[1]
-        result = list[2]
+        callIndex = list[1]
+        success = list[2]
+        result = list[3]
         if (self.servicePendingCalls.has_key(methodId)):
-            cb = self.servicePendingCalls[methodId]
+            cb = self.servicePendingCalls[methodId]['calls'][callIndex]
+            if cb is None:
+                raise Exception("No pending call " + str(callIndex) + " for methodID " + methodId)
             if (success):                
                 successCB = cb["successCB"]
                 if (result != None):
@@ -509,7 +512,10 @@ class CloudeebusService:
                     errorCB(result)
                 else:
                     errorCB()
-            del self.servicePendingCalls[methodId]
+            self.servicePendingCalls[methodId]['calls'][callIndex] = None
+            self.servicePendingCalls[methodId]['count'] = self.servicePendingCalls[methodId]['count'] - 1
+            if self.servicePendingCalls[methodId]['count'] == 0:
+                del self.servicePendingCalls[methodId]
         else:
             raise Exception("No methodID " + methodId)
 
@@ -517,8 +523,12 @@ class CloudeebusService:
         methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
-        self.servicePendingCalls[methodId] = cb
-        factory.dispatch(methodId, json.dumps(args))
+        if methodId not in self.servicePendingCalls:
+            self.servicePendingCalls[methodId] = {'count': 0, 'calls': []}
+        pendingCallStr = json.dumps({'callIndex': len(self.servicePendingCalls[methodId]['calls']), 'args': args})
+        self.servicePendingCalls[methodId]['calls'].append(cb)
+        self.servicePendingCalls[methodId]['count'] = self.servicePendingCalls[methodId]['count'] + 1
+        factory.dispatch(methodId, pendingCallStr)
                     
     @exportRpc
     def serviceAdd(self, list):

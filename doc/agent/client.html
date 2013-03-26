@@ -47,7 +47,8 @@ function gotAddResult(aSum) {
 
 function gotProxy(proxy) {
   logCB(proxy);
-  proxy.Add(32,16,gotAddResult,errorCB);
+  for (var i=-10; i<10; i++)
+    proxy.Add(i,i*2,gotAddResult,errorCB);
   sampleProxy = proxy;
 }
 

@@ -31,15 +31,19 @@ function errorCB(error) {
 }
 
 function addCalled(args) {
-var args = JSON.parse(arguments[1]);
-  cloudeebus.log("Add method called: " + args[0] + " + " + args[1]);
-  cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Add", true, args[0] + args[1]);
+  var methodId = arguments[0];
+  var callDict = JSON.parse(arguments[1]);
+  cloudeebus.log("Method called: " + methodId);
+  cloudeebus.log("Add: " + callDict.args[0] + " + " + callDict.args[1] + " = " + (callDict.args[0] + callDict.args[1]));
+  cloudeebus.SessionBus().service.returnMethod(methodId, callDict.callIndex, true, callDict.args[0] + callDict.args[1]);
 }
 
 function releaseCalled() {
-  cloudeebus.log("Release method called");
-  cloudeebus.SessionBus().service.returnMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release", true, null);
-  cloudeebus.SessionBus().service.wampSession.unsubscribe("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release");  
+  var methodId = arguments[0];
+  var callDict = JSON.parse(arguments[1]);
+  cloudeebus.log("Method called: " + methodId);
+  cloudeebus.SessionBus().service.returnMethod(methodId, 0, true, null);
+  cloudeebus.SessionBus().service.wampSession.unsubscribe(methodId);  
   cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
   cloudeebus.SessionBus().service.remove(logCB, errorCB);
 }

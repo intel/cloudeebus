@@ -51,6 +51,37 @@ VERSION = "0.3.0"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
+NETMASK =  [{}]
+
+###############################################################################
+def ipV4ToHex(mask):
+    ## Convert an ip or an IP mask (such as ip/24 or ip/255.255.255.0) in hex value (32bits)
+    invalidMask = False
+    maskHex = 0
+    byte = 0
+    if (mask.rfind(".") == -1):
+        if (int(mask) < 32):
+            maskHex = (2**(int(mask))-1)
+            maskHex = maskHex << (32-int(mask))
+        else:
+            invalidMask = invalidMask or True
+    else:
+        maskField = mask.split(".")
+        # Check if mask has four fields (byte)
+        invalidMask = invalidMask or len(maskField) != 4                    
+        for maskQuartet in maskField:
+            byte = int(maskQuartet)
+            # Check if each field is really a byte
+            if (byte > 255):
+                invalidMask = invalidMask or True                
+            maskHex += byte
+            maskHex = maskHex << 8
+        maskHex = maskHex >> 8
+    if (invalidMask != False):
+        msg = "Illegal mask (or IP address) " + mask
+        log.msg(msg)
+        raise Exception(msg)
+    return maskHex
 
 ###############################################################################
 class DbusCache:
@@ -273,6 +304,18 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
 
     def onAuthenticated(self, key, permissions):
         if not OPENDOOR:
+            # check net filter
+            if (NETMASK != [{}]):
+                ipAllowed = False
+                for netfilter in NETMASK:
+                    ipHex=ipV4ToHex(self.peer.host)
+                    ipAllowed = (ipHex & netfilter['mask']) == netfilter['ipAllowed'] & netfilter['mask']
+                    if (ipAllowed == True):
+                        log.msg("Netmask list allows host " + self.peer.host)
+                        
+                if (ipAllowed == False):
+                    log.msg("Netmask list rejects host " + self.peer.host)
+                    raise Exception("host: " + self.peer.host + " is not allowed!")
             # check authentication key
             if key is None:
                 raise Exception("Authentication failed")
@@ -313,6 +356,8 @@ if __name__ == '__main__':
         help='path to credentials file')
     parser.add_argument('-w', '--whitelist',
         help='path to whitelist file')
+    parser.add_argument('-n', '--netmask',
+        help='netmask,IP filter (comma separated.) eg. : -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0')
     
     args = parser.parse_args(sys.argv[1:])
 
@@ -334,6 +379,26 @@ if __name__ == '__main__':
         jfile = open(args.whitelist)
         WHITELIST = json.load(jfile)
         jfile.close()
+        
+    if args.netmask:
+        iplist = args.netmask.split(",")
+        for ip in iplist:
+            log.msg("Checking netmask " + ip)
+            if (ip.rfind("/") != -1):
+                msg = "domain " + ip + " will be allowed"
+                ip=ip.split("/")
+                ipAllowed = ip[0]
+                mask = ip[1]
+            else:
+                msg = "IP address " + ip + " will be allowed"
+                ipAllowed = ip
+                mask = "255.255.255.255"
+                
+            if (NETMASK == [{}]):
+                NETMASK[0] = {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)}
+            else:
+                NETMASK.append( {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)} )
+            log.msg(msg)
     
     uri = "ws://localhost:" + args.port
     

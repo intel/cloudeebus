@@ -26,7 +26,7 @@ See the [Getting Started](https://github.com/01org/cloudeebus/wiki/Getting-start
 The Cloudeebus server must be run either with credentials and a whitelist to
  restrict access to DBus services, or in opendoor mode.
 
-	usage: cloudeebus.py [-h] [-v] [-d] [-o] [-p PORT] [-c CREDENTIALS] [-w WHITELIST]
+	usage: cloudeebus.py [-h] [-v] [-d] [-o] [-p PORT] [-c CREDENTIALS] [-w WHITELIST] [-n NETMASK,IP ADDRESS]
 	
 	Javascript DBus bridge.
 	
@@ -40,6 +40,9 @@ The Cloudeebus server must be run either with credentials and a whitelist to
 	                        path to credentials file
 	  -w WHITELIST, --whitelist WHITELIST
 	                        path to whitelist file
+  	  -n NETMASK, --netmask NETMASK
+                        	netmask,IP filter (comma separated.) eg. :
+	                        -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0
 
 
 Examples

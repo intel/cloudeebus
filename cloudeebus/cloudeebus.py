@@ -18,6 +18,7 @@
 #
 # Luc Yriarte <luc.yriarte@intel.com>
 # Christophe Guiraud <christophe.guiraud@intel.com>
+# Frederic Paut <frederic.paut@intel.com>
 #
 
 

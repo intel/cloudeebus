@@ -51,7 +51,7 @@ VERSION = "0.3.0"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
-NETMASK =  [{}]
+NETMASK =  []
 
 ###############################################################################
 def ipV4ToHex(mask):
@@ -59,7 +59,7 @@ def ipV4ToHex(mask):
     invalidMask = False
     maskHex = 0
     byte = 0
-    if (mask.rfind(".") == -1):
+    if mask.rfind(".") == -1:
         if (int(mask) < 32):
             maskHex = (2**(int(mask))-1)
             maskHex = maskHex << (32-int(mask))
@@ -72,12 +72,12 @@ def ipV4ToHex(mask):
         for maskQuartet in maskField:
             byte = int(maskQuartet)
             # Check if each field is really a byte
-            if (byte > 255):
+            if byte > 255:
                 invalidMask = invalidMask or True                
             maskHex += byte
             maskHex = maskHex << 8
         maskHex = maskHex >> 8
-    if (invalidMask != False):
+    if invalidMask:
         msg = "Illegal mask (or IP address) " + mask
         log.msg(msg)
         raise Exception(msg)
@@ -305,17 +305,16 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
     def onAuthenticated(self, key, permissions):
         if not OPENDOOR:
             # check net filter
-            if (NETMASK != [{}]):
+            if NETMASK != []:
                 ipAllowed = False
                 for netfilter in NETMASK:
                     ipHex=ipV4ToHex(self.peer.host)
                     ipAllowed = (ipHex & netfilter['mask']) == netfilter['ipAllowed'] & netfilter['mask']
-                    if (ipAllowed == True):
-                        log.msg("Netmask list allows host " + self.peer.host)
+                    if ipAllowed:
+                        break
                         
-                if (ipAllowed == False):
-                    log.msg("Netmask list rejects host " + self.peer.host)
-                    raise Exception("host: " + self.peer.host + " is not allowed!")
+                if not ipAllowed:
+                    raise Exception("host " + self.peer.host + " is not allowed!")
             # check authentication key
             if key is None:
                 raise Exception("Authentication failed")
@@ -383,22 +382,14 @@ if __name__ == '__main__':
     if args.netmask:
         iplist = args.netmask.split(",")
         for ip in iplist:
-            log.msg("Checking netmask " + ip)
-            if (ip.rfind("/") != -1):
-                msg = "domain " + ip + " will be allowed"
+            if ip.rfind("/") != -1:
                 ip=ip.split("/")
                 ipAllowed = ip[0]
                 mask = ip[1]
             else:
-                msg = "IP address " + ip + " will be allowed"
                 ipAllowed = ip
-                mask = "255.255.255.255"
-                
-            if (NETMASK == [{}]):
-                NETMASK[0] = {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)}
-            else:
-                NETMASK.append( {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)} )
-            log.msg(msg)
+                mask = "255.255.255.255" 
+            NETMASK.append( {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)} )
     
     uri = "ws://localhost:" + args.port
     

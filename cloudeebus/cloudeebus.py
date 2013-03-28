@@ -308,7 +308,6 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
                     ipAllowed = (ipHex & netfilter['mask']) == netfilter['ipAllowed'] & netfilter['mask']
                     if ipAllowed:
                         break
-                        
                 if not ipAllowed:
                     raise Exception("host " + self.peer.host + " is not allowed!")
             # check authentication key

@@ -17,7 +17,7 @@
    <body>
         <center><h1>cloudeebus</h1></center>
         <br>
-		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method></interface></node>';
+		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="i" name="result"/></signal></interface></node>';
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -32,10 +32,14 @@ function errorCB(error) {
 
 function addCalled(args) {
   var methodId = arguments[0];
+  var objPath = methodId.split("#")[1];
   var callDict = JSON.parse(arguments[1]);
   cloudeebus.log("Method called: " + methodId);
-  cloudeebus.log("Add: " + callDict.args[0] + " + " + callDict.args[1] + " = " + (callDict.args[0] + callDict.args[1]));
-  cloudeebus.SessionBus().service.returnMethod(methodId, callDict.callIndex, true, callDict.args[0] + callDict.args[1]);
+  result = callDict.args[0] + callDict.args[1];
+  cloudeebus.log("Add: " + callDict.args[0] + " + " + callDict.args[1] + " = " + result);
+  cloudeebus.SessionBus().service.returnMethod(methodId, callDict.callIndex, true, result);
+  cloudeebus.log("Emit signal 'ResultChanged' with value " + result);
+  cloudeebus.SessionBus().service.emitSignal(objPath, "ResultChanged", result);
 }
 
 function releaseCalled() {

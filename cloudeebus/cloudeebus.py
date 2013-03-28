@@ -229,6 +229,8 @@ class XmlCbParser: # The target object of the parser
                                                 attrib['type'])
                 return
             if (self.current == 'signal'):
+                if (attrib.has_key('name') == False):
+                    attrib['name'] = 'value'
                 self.dynDBusClass.add_signature(attrib['name'], 'in',
                                                 attrib['type'])
                 return
@@ -486,6 +488,21 @@ class CloudeebusService:
         self.pendingCalls.append(dbusCallHandler)
         return dbusCallHandler.callMethod()
 
+
+    @exportRpc
+    def emitSignal(self, list):
+        '''
+        arguments: agentObjectPath, signalName, result (to emit)
+        '''
+        objectPath = list[0]
+        className = re.sub('/', '_', objectPath[1:])
+        signalName = list[1]
+        result = list[2]
+        if (self.serviceAgents.has_key(className) == True):
+            exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "(" + str(result) + ")"
+            eval(exe_str, self.globalCtx, self.localCtx)
+        else:
+            raise Exception("No object path " + objectPath)
 
     @exportRpc
     def returnMethod(self, list):

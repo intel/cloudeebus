@@ -270,6 +270,16 @@ cloudeebus.Service.prototype.returnMethod = function(methodId, callIndex, succes
 	this.wampSession.call("returnMethod", arglist).then(successCB, errorCB);
 };
 
+cloudeebus.Service.prototype.emitSignal = function(objectPath, signalName, result, successCB, errorCB) {
+	var arglist = [
+	    objectPath,
+	    signalName,
+	    result
+	    ];
+
+	this.wampSession.call("emitSignal", arglist).then(successCB, errorCB);
+};
+
 
 /*****************************************************************************/
 

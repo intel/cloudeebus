@@ -45,11 +45,17 @@ function gotAddResult(aSum) {
 //  sampleProxy.Release();
 }
 
+function signalHandler(aSum) {
+  cloudeebus.log("signal 'ResultChanged': " + aSum);
+}
+
 function gotProxy(proxy) {
   logCB(proxy);
   for (var i=-10; i<10; i++)
     proxy.Add(i,i*2,gotAddResult,errorCB);
   sampleProxy = proxy;
+  sampleProxy.connectToSignal("org.cloudeebus.Sample", "ResultChanged", signalHandler);
+  
 }
 
 function connectSuccess() {

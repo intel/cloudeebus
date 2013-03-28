@@ -56,7 +56,6 @@ NETMASK =  []
 ###############################################################################
 def ipV4ToHex(mask):
     ## Convert an ip or an IP mask (such as ip/24 or ip/255.255.255.0) in hex value (32bits)
-    invalidMask = False
     maskHex = 0
     byte = 0
     if mask.rfind(".") == -1:
@@ -64,23 +63,20 @@ def ipV4ToHex(mask):
             maskHex = (2**(int(mask))-1)
             maskHex = maskHex << (32-int(mask))
         else:
-            invalidMask = invalidMask or True
+            raise Exception("Illegal mask (larger than 32 bits) " + mask)
     else:
         maskField = mask.split(".")
         # Check if mask has four fields (byte)
-        invalidMask = invalidMask or len(maskField) != 4                    
+        if len(maskField) != 4:
+            raise Exception("Illegal ip address / mask (should be 4 bytes) " + mask)
         for maskQuartet in maskField:
             byte = int(maskQuartet)
             # Check if each field is really a byte
             if byte > 255:
-                invalidMask = invalidMask or True                
+                raise Exception("Illegal ip address / mask (digit larger than a byte) " + mask)              
             maskHex += byte
             maskHex = maskHex << 8
         maskHex = maskHex >> 8
-    if invalidMask:
-        msg = "Illegal mask (or IP address) " + mask
-        log.msg(msg)
-        raise Exception(msg)
     return maskHex
 
 ###############################################################################

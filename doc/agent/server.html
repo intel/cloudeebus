@@ -52,10 +52,11 @@ function releaseCalled() {
   cloudeebus.SessionBus().service.remove(logCB, errorCB);
 }
 
-function serviceAdded(servName) {
-  cloudeebus.SessionBus().service.registerMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Add",addCalled);
-  cloudeebus.SessionBus().service.registerMethod("org.cloudeebus.Sample#/org/cloudeebus/Sample#Release",releaseCalled);
-  cloudeebus.SessionBus().service.addAgent("/org/cloudeebus/Sample", sampleXml, logCB, errorCB);
+function serviceAdded(service) {
+  var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
+  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Add",addCalled);
+  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Release",releaseCalled);
+  cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, logCB, errorCB);
 }
 
 function connectSuccess() {

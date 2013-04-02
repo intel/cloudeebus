@@ -138,13 +138,14 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB,
 	
 	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
 	
-	function busServiceAddedSuccessCB(serviceName) {
+	function busServiceAddedSuccessCB(service) {
 		self.service = cloudeebusService;
 		if (successCB)
-			successCB(serviceName);
+			successCB(cloudeebusService);
 	}
 	
 	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
+	return cloudeebusService;
 };
 
 cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {
@@ -174,10 +175,12 @@ cloudeebus.Service = function(session, busConnection, name) {
 };
 
 cloudeebus.Service.prototype.add = function(successCB, errorCB) {
+	var self = this;
+	
 	function ServiceAddedSuccessCB(serviceName) {
 		if (successCB) {
 			try { // calling dbus hook object function for un-translated types
-				successCB(serviceName);
+				successCB(self);
 			}
 			catch (e) {
 				alert(arguments.callee.name + "-> Method callback exception: " + e);

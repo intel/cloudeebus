@@ -141,10 +141,11 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB,
 	function busServiceAddedSuccessCB(serviceName) {
 		self.service = cloudeebusService;
 		if (successCB)
-			successCB(serviceName);
+			successCB(cloudeebusService);
 	}
 	
 	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
+	return cloudeebusService;
 };
 
 cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {

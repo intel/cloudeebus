@@ -379,9 +379,9 @@ class DynDBusClass():
     def add_body_method(self):
         if (self.methodToAdd != None):
             if (self.args_str != str()):
-                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', '" + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
             else:        
-                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', dbus_async_cb, dbus_async_err_cb)")
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', '" + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb)")
 
     def add_body_signal(self):
         self.class_code.append_stmt("return") ## TODO: Remove and fix with code ad hoc
@@ -536,8 +536,8 @@ class CloudeebusService:
         else:
             raise Exception("No methodID " + methodId)
 
-    def srvCB(self, name, async_succes_cb, async_error_cb, *args):
-        methodId = self.srvName + "#" + self.agentObjectPath + "#" + name
+    def srvCB(self, name, ifName, async_succes_cb, async_error_cb, *args):
+        methodId = self.srvName + "#" + self.agentObjectPath + "#" + ifName + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
         if methodId not in self.servicePendingCalls:

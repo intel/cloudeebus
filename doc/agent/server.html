@@ -54,8 +54,9 @@ function releaseCalled() {
 
 function serviceAdded(service) {
   var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
-  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Add",addCalled);
-  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Release",releaseCalled);
+  var ifName = "org.cloudeebus.Sample"
+  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#" + ifName + "#Add",addCalled);
+  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#" + ifName + "#Release",releaseCalled);
   cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, logCB, errorCB);
 }
 

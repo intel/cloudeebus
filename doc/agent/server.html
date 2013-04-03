@@ -30,6 +30,23 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+sampleObjectHandler = {
+  Add: function(a,b) {
+    return a+b;
+  }, 
+  Release: function() {
+    return;
+  },
+  interfaceProxies = {
+    "org.free.props": {
+      Release: function() {
+        return;
+  	  }
+    }
+  }
+};
+
+
 function addCalled(args) {
   var methodId = arguments[0];
   var objPath = methodId.split("#")[1];
@@ -54,9 +71,9 @@ function releaseCalled() {
 
 function serviceAdded(service) {
   var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
-  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Add",addCalled);
-  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Release",releaseCalled);
-  cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, logCB, errorCB);
+//   cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Add",addCalled);
+//  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Release",releaseCalled);
+   cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler, logCB, errorCB);
 }
 
 function connectSuccess() {

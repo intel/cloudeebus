@@ -217,66 +217,79 @@ cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
 	this.wampSession.call("serviceRelease", arglist).then(ServiceRemovedSuccessCB, errorCB);
 };
 
-cloudeebus.Service.prototype._addMethod = function(objectPath, objectJS, method, nArgs) {
+cloudeebus.Service.prototype._searchMethod = function(ifName, method, objectJS) {
 
-	var self = this;
-	var methodId = self.name + "#" + objectPath + "#" + method;
-	var object = objectJS;
+	var funcToCall = null;
 	
-	objectJS.wrapperFunc[method] = function() {
-		var result;
-		if (arguments.length < nArgs || arguments.length > nArgs + 2)
-			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
-		var args = [];
-		var successCB = null;
-		var errorCB = null;
-		var methodId = arguments[0];
-		var callDict = JSON.parse(arguments[1]);
-		for (var i=0; i < nArgs; i++ )
-			args.push(arguments[i]);
-		if (arguments.length > nArgs)
-			successCB = arguments[nArgs];
-		if (arguments.length > nArgs + 1)
-			errorCB = arguments[nArgs + 1];
-		
-		var str_exec = "object.prototype."+method+"()";
-		try {
-			result = eval(str_exec);
-			self._returnMethod(methodId, callDict.callIndex, true, result);		
-		}
-		catch (e) {
-			alert(arguments.callee.name + "-> Method callback exception: " + e);
-			self._returnMethod(methodId, callDict.callIndex, false, e);		
-		}
-	};
-	
-	self._registerMethod(methodId, objectJS.wrapperFunc[method]);
+	// Check if 'objectJS' has a member 'interfaceProxies' with an interface named 'ifName' 
+	// and a method named 'method'
+	if (objectJS.interfaceProxies && objectJS.interfaceProxies[ifName] &&
+		objectJS.interfaceProxies[ifName][method]) {
+		funcToCall = objectJS.interfaceProxies[ifName][method];
+	} else {
+		// retrieve the method directly from 'root' of objectJs
+		funcToCall = objectJS[method];
+	}
 
-	
+	return funcToCall;
+}
+
+cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, objectJS) {
+
+	var service = this;
+	var methodId = this.name + "#" + objectPath + "#" + ifName + "#" + method;
+	var funcToCall = this._searchMethod(ifName, method, objectJS);
+
+	if (funcToCall == null)
+		cloudeebus.log("Method " + method + " doesn't exist in Javascript object");
+	else {
+		objectJS.wrapperFunc[method] = function() {
+			var result;
+			var methodId = arguments[0];
+			var callDict = JSON.parse(arguments[1]);
+			try {
+				result = funcToCall.apply(objectJS, callDict.args);
+				service._returnMethod(methodId, callDict.callIndex, true, result);
+			}
+			catch (e) {
+				cloudeebus.log(arguments.callee.name + "-> Method callback exception: " + e);
+				service._returnMethod(methodId, callDict.callIndex, false, e.message);
+			}
+		};
+		this._registerMethod(methodId, objectJS.wrapperFunc[method]);
+	}
+};
+
+cloudeebus.Service.prototype._addSignal = function(objectPath, signal, objectJS) {
+	var service = this;
+
+	if (objectJS[signal] != undefined && objectJS[signal] != null)
+		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
+	else {
+		objectJS[signal] = function() {
+			var result = JSON.parse(arguments[0]);
+			service.emitSignal(objectPath, signal, result);
+		};
+    }
 };
 
 cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, objectJS) {
 	var self = this;
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlTemplate, "text/xml");
-	var interfaces = xmlDoc.getElementsByTagName("interface");
+	var ifXml = xmlDoc.getElementsByTagName("interface");
 	objectJS.wrapperFunc = []
-	for (var i=0; i < interfaces.length; i++) {
-//		var ifName = interfaces[i].attributes.getNamedItem("name").value;
-		var ifChild = interfaces[i].firstChild;
+	for (var i=0; i < ifXml.length; i++) {
+		var ifName = ifXml[i].attributes.getNamedItem("name").value;
+		var ifChild = ifXml[i].firstChild;
 		while (ifChild) {
 			if (ifChild.nodeName == "method") {
-				var nArgs = 0;
-				var metChild = ifChild.firstChild;
-				while (metChild) {
-					if (metChild.nodeName == "arg" &&
-						metChild.attributes.getNamedItem("direction") != null && 
-						metChild.attributes.getNamedItem("direction").value == "in")
-							nArgs++;
-					metChild = metChild.nextSibling;
-				}
 				var metName = ifChild.attributes.getNamedItem("name").value;
-				self._addMethod(objectPath, objectJS, metName, nArgs);
+				self._addMethod(objectPath, ifName, metName, objectJS);
+			}
+			if (ifChild.nodeName == "signal") {
+				var metName = ifChild.attributes.getNamedItem("name").value;
+				self._addSignal(objectPath, metName, objectJS);
 			}
 			ifChild = ifChild.nextSibling;
 		}

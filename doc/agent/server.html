@@ -17,7 +17,7 @@
    <body>
         <center><h1>cloudeebus</h1></center>
         <br>
-		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="i" name="result"/></signal></interface></node>';
+		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample1"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="i" name="result"/></signal></interface><interface name="org.cloudeebus.Sample2"><method name="Div"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method></interface></node>';
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -32,48 +32,25 @@ function errorCB(error) {
 
 sampleObjectHandler = {
   Add: function(a,b) {
+    this.ResultChanged(a+b);
     return a+b;
   }, 
   Release: function() {
-    return;
+    cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
+    cloudeebus.SessionBus().service.remove(logCB, errorCB);
   },
-  interfaceProxies = {
-    "org.free.props": {
-      Release: function() {
-        return;
-  	  }
+  interfaceProxies : {
+    "org.cloudeebus.Sample2" : {
+      Div: function(a,b) {
+        return a/b;
+      } 
     }
   }
 };
 
-
-function addCalled(args) {
-  var methodId = arguments[0];
-  var objPath = methodId.split("#")[1];
-  var callDict = JSON.parse(arguments[1]);
-  cloudeebus.log("Method called: " + methodId);
-  result = callDict.args[0] + callDict.args[1];
-  cloudeebus.log("Add: " + callDict.args[0] + " + " + callDict.args[1] + " = " + result);
-  cloudeebus.SessionBus().service.returnMethod(methodId, callDict.callIndex, true, result);
-  cloudeebus.log("Emit signal 'ResultChanged' with value " + result);
-  cloudeebus.SessionBus().service.emitSignal(objPath, "ResultChanged", result);
-}
-
-function releaseCalled() {
-  var methodId = arguments[0];
-  var callDict = JSON.parse(arguments[1]);
-  cloudeebus.log("Method called: " + methodId);
-  cloudeebus.SessionBus().service.returnMethod(methodId, 0, true, null);
-  cloudeebus.SessionBus().service.wampSession.unsubscribe(methodId);  
-  cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
-  cloudeebus.SessionBus().service.remove(logCB, errorCB);
-}
-
 function serviceAdded(service) {
   var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
-//   cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Add",addCalled);
-//  cloudeebus.SessionBus().service.registerMethod(service.name + "#" + agentName + "#Release",releaseCalled);
-   cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler, logCB, errorCB);
+  cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler, logCB, errorCB);
 }
 
 function connectSuccess() {

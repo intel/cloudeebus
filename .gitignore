@@ -4,3 +4,4 @@ dist
 cloudeebus.egg-info
 .project
 .pydevproject
+*.pyc

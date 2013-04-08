@@ -48,9 +48,6 @@ from twisted.python import log
 # XML parser module
 from xml.etree.ElementTree import XMLParser
 
-# For debug only
-import os
-
 ###############################################################################
 
 VERSION = "0.3.0"
@@ -584,18 +581,6 @@ class CloudeebusService:
         if (self.dynDBusClasses.has_key(self.className) == False):
             self.dynDBusClasses[self.className] = DynDBusClass(self.className, self.globalCtx, self.localCtx)
             self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
-
-            # For Debug only
-            if (1):
-                if (1): ## Force deletion
-                    if os.access('./MyDbusClass.py', os.R_OK) == True:
-                        os.remove('./MyDbusClass.py')
-                    
-                    if os.access('./MyDbusClass.py', os.R_OK) == False:
-                        f = open('./MyDbusClass.py', 'w')
-                        f.write(self.dynDBusClasses[self.className].class_code.exec_string)
-                        f.close()
-                        
             self.dynDBusClasses[self.className].declare()
 
         ## Class already exist, instanciate it if not already instanciated

@@ -260,17 +260,28 @@ cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, o
 	}
 };
 
-cloudeebus.Service.prototype._addSignal = function(objectPath, signal, objectJS) {
+cloudeebus.Service.prototype._addSignal = function(objectPath, ifName, signal, objectJS) {
 	var service = this;
+	var methodExist = false;
 
-	if (objectJS[signal] != undefined && objectJS[signal] != null)
-		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
-	else {
+	if (objectJS.interfaceProxies && objectJS.interfaceProxies[ifName])
+		if (objectJS.interfaceProxies[ifName][signal]) {
+			methodExist = true;
+		} else {
+			objectJS.interfaceProxies[ifName][signal] = function() {
+				var result = JSON.parse(arguments[0]);
+				service.emitSignal(objectPath, signal, result);
+			};
+		return;
+	}
+		
+	if ((objectJS[signal] == undefined || objectJS[signal] == null) && !methodExist) 
 		objectJS[signal] = function() {
 			var result = JSON.parse(arguments[0]);
 			service.emitSignal(objectPath, signal, result);
 		};
-    }
+	else
+		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
 };
 
 cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, objectJS) {
@@ -289,7 +300,7 @@ cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, 
 			}
 			if (ifChild.nodeName == "signal") {
 				var metName = ifChild.attributes.getNamedItem("name").value;
-				self._addSignal(objectPath, metName, objectJS);
+				self._addSignal(objectPath, ifName, metName, objectJS);
 			}
 			ifChild = ifChild.nextSibling;
 		}

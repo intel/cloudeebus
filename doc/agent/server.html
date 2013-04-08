@@ -48,9 +48,32 @@ sampleObjectHandler = {
   }
 };
 
+sampleObjectHandler2 = {
+  interfaceProxies : {
+    "org.cloudeebus.Sample1" : {
+  	  Add: function(a,b) {
+    	this.interfaceProxies["org.cloudeebus.Sample1"].ResultChanged(a+b);
+    	return a+b;
+      }, 
+      Release: function() {
+        cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
+        cloudeebus.SessionBus().service.remove(logCB, errorCB);
+      },
+    },
+    "org.cloudeebus.Sample2" : {
+      Div: function(a,b) {
+        return a/b;
+      } 
+    }
+  }
+};
+
 function serviceAdded(service) {
   var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
   cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler, logCB, errorCB);
+  
+  agentName = agentName + "2";
+  cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler2, logCB, errorCB);
 }
 
 function connectSuccess() {

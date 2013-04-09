@@ -51,7 +51,7 @@ function signalHandler(aSum) {
 
 function gotProxy(proxy) {
   logCB(proxy);
-  proxy.connectToSignal("org.cloudeebus.Sample", "ResultChanged", signalHandler);
+  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
   for (var i=-10; i<10; i++)
     proxy.Add(i,i*2,gotAddResult,errorCB);
   sampleProxy = proxy;

@@ -40,7 +40,7 @@ The Cloudeebus server must be run either with credentials and a whitelist to
 	                        path to credentials file
 	  -w WHITELIST, --whitelist WHITELIST
 	                        path to whitelist file
-  	  -n NETMASK, --netmask NETMASK
+	  -n NETMASK, --netmask NETMASK
                         	netmask,IP filter (comma separated.) eg. :
 	                        -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0
 

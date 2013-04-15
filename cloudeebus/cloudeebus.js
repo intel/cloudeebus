@@ -269,7 +269,7 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 	
 };
 
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB = null, errorCB = null) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
 	
 	var self = this;
 	var request = new cloudeebus.Request(this, successCB, errorCB);
@@ -290,7 +290,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 
 	function callMethodErrorCB(error) {
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
-		request.error = error.desc
+		request.error = error.desc;
 		if (request.onerror)
 			request.onerror(request.error);
 	}

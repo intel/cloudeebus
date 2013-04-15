@@ -58,6 +58,7 @@ function notifCB(result) {
 
 function gotNotifProxy(proxy) {
 	proxy.Notify("Cloudeebus",0,"","Cloudeebus says:", "Hello, world !", [], {}, 0);
+	proxy.getInterface("org.freedesktop.Notifications").GetCapabilities(logCB, errorCB);
 }
 
 function gotBusProxy(proxy) {

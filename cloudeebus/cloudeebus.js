@@ -282,8 +282,8 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
-				if (errorCB)
-					errorCB(e);
+				if (request.onerror)
+					request.onerror(e);
 			}
 		}
 	}

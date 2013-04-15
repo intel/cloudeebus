@@ -18,6 +18,5 @@ API style:
 
 DBus service support:
 ---------------------
-- support publishing a DBus service
 - support sending signals
 

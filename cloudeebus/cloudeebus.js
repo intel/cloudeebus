@@ -120,6 +120,7 @@ cloudeebus.SystemBus = function() {
 cloudeebus.BusConnection = function(name, session) {
 	this.name = name;
 	this.wampSession = session;
+	this.service = null;
 	return this;
 };
 
@@ -131,6 +132,255 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 	return proxy;
 };
 
+
+cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB, errorCB) {
+	var self = this;
+	
+	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
+	
+	function busServiceAddedSuccessCB(service) {
+		self.service = cloudeebusService;
+		if (successCB)
+			successCB(cloudeebusService);
+	}
+	
+	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
+	return cloudeebusService;
+};
+
+cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {
+	var self = this;
+	
+	function busServiceRemovedSuccessCB(serviceName) {
+		// Be sure we are removing the service requested...
+		if (serviceName == self.service.name) {
+			self.service = null;
+			if (successCB)
+				successCB(serviceName);
+		}
+	}
+	
+	cloudeebusService.remove(busServiceRemovedSuccessCB, errorCB);
+};
+
+
+/*****************************************************************************/
+
+cloudeebus.Service = function(session, busConnection, name) {
+	this.wampSession = session;
+	this.busConnection = busConnection; 
+	this.name = name;
+	this.isCreated = false;
+	return this;
+};
+
+cloudeebus.Service.prototype.add = function(successCB, errorCB) {
+	var self = this;
+	
+	function ServiceAddedSuccessCB(serviceName) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(self);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    this.busConnection,
+	    this.name
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
+	function ServiceRemovedSuccessCB(serviceName) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(serviceName);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    this.name
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceRelease", arglist).then(ServiceRemovedSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype._searchMethod = function(ifName, method, objectJS) {
+
+	var funcToCall = null;
+	
+	// Check if 'objectJS' has a member 'interfaceProxies' with an interface named 'ifName' 
+	// and a method named 'method'
+	if (objectJS.interfaceProxies && objectJS.interfaceProxies[ifName] &&
+		objectJS.interfaceProxies[ifName][method]) {
+		funcToCall = objectJS.interfaceProxies[ifName][method];
+	} else {
+		// retrieve the method directly from 'root' of objectJs
+		funcToCall = objectJS[method];
+	}
+
+	return funcToCall;
+}
+
+cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, objectJS) {
+
+	var service = this;
+	var methodId = this.name + "#" + objectPath + "#" + ifName + "#" + method;
+	var funcToCall = this._searchMethod(ifName, method, objectJS);
+
+	if (funcToCall == null)
+		cloudeebus.log("Method " + method + " doesn't exist in Javascript object");
+	else {
+		objectJS.wrapperFunc[method] = function() {
+			var result;
+			var methodId = arguments[0];
+			var callDict = JSON.parse(arguments[1]);
+			try {
+				result = funcToCall.apply(objectJS, callDict.args);
+				service._returnMethod(methodId, callDict.callIndex, true, result);
+			}
+			catch (e) {
+				cloudeebus.log(arguments.callee.name + "-> Method callback exception: " + e);
+				service._returnMethod(methodId, callDict.callIndex, false, e.message);
+			}
+		};
+		this._registerMethod(methodId, objectJS.wrapperFunc[method]);
+	}
+};
+
+cloudeebus.Service.prototype._addSignal = function(objectPath, ifName, signal, objectJS) {
+	var service = this;
+	var methodExist = false;
+
+	if (objectJS.interfaceProxies && objectJS.interfaceProxies[ifName])
+		if (objectJS.interfaceProxies[ifName][signal]) {
+			methodExist = true;
+		} else {
+			objectJS.interfaceProxies[ifName][signal] = function() {
+				var result = JSON.parse(arguments[0]);
+				service.emitSignal(objectPath, signal, result);
+			};
+		return;
+	}
+		
+	if ((objectJS[signal] == undefined || objectJS[signal] == null) && !methodExist) 
+		objectJS[signal] = function() {
+			var result = JSON.parse(arguments[0]);
+			service.emitSignal(objectPath, signal, result);
+		};
+	else
+		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
+};
+
+cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, objectJS) {
+	var self = this;
+	var parser = new DOMParser();
+	var xmlDoc = parser.parseFromString(xmlTemplate, "text/xml");
+	var ifXml = xmlDoc.getElementsByTagName("interface");
+	objectJS.wrapperFunc = []
+	for (var i=0; i < ifXml.length; i++) {
+		var ifName = ifXml[i].attributes.getNamedItem("name").value;
+		var ifChild = ifXml[i].firstChild;
+		while (ifChild) {
+			if (ifChild.nodeName == "method") {
+				var metName = ifChild.attributes.getNamedItem("name").value;
+				self._addMethod(objectPath, ifName, metName, objectJS);
+			}
+			if (ifChild.nodeName == "signal") {
+				var metName = ifChild.attributes.getNamedItem("name").value;
+				self._addSignal(objectPath, ifName, metName, objectJS);
+			}
+			ifChild = ifChild.nextSibling;
+		}
+	}
+};
+
+cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, objectJS, successCB, errorCB) {
+	function ServiceAddAgentSuccessCB(objPath) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(objPath);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	try { // calling dbus hook object function for un-translated types
+		this._createWrapper(xmlTemplate, objectPath, objectJS);
+	}
+	catch (e) {
+		alert(arguments.callee.name + "-> Method callback exception: " + e);
+		errorCB(e.desc);
+		return;
+	}
+	
+	var arglist = [
+	    objectPath,
+	    xmlTemplate
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceAddAgent", arglist).then(ServiceAddAgentSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype.delAgent = function(objectPath, successCB, errorCB) {
+	function ServiceDelAgentSuccessCB(agent) {
+		if (successCB) {
+			try { // calling dbus hook object function for un-translated types
+				successCB(agent);
+			}
+			catch (e) {
+				alert(arguments.callee.name + "-> Method callback exception: " + e);
+			}
+		}
+	}
+	
+	var arglist = [
+	    objectPath
+	    ];
+
+	// call dbusSend with bus type, destination, object, message and arguments
+	this.wampSession.call("serviceDelAgent", arglist).then(ServiceDelAgentSuccessCB, errorCB);
+};
+
+cloudeebus.Service.prototype._registerMethod = function(methodId, methodHandler) {
+	this.wampSession.subscribe(methodId, methodHandler);
+};
+
+cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, success, result, successCB, errorCB) {
+	var arglist = [
+	    methodId,
+	    callIndex,
+	    success,
+	    result
+	    ];
+
+	this.wampSession.call("returnMethod", arglist).then(successCB, errorCB);
+};
+
+cloudeebus.Service.prototype.emitSignal = function(objectPath, signalName, result, successCB, errorCB) {
+	var arglist = [
+	    objectPath,
+	    signalName,
+	    result
+	    ];
+
+	this.wampSession.call("emitSignal", arglist).then(successCB, errorCB);
+};
 
 
 /*****************************************************************************/

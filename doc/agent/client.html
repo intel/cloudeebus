@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../lib/autobahn.min.js"></script>
+        <script src="../../cloudeebus/cloudeebus.js"></script>
+        <script type="text/javascript">
+		function evalScript() {
+			eval(
+				"var lambda = function() {" +
+					document.getElementById('script').value +
+				"};" + 
+				"lambda();"
+			);
+		}
+        </script>
+    </head>
+   <body>
+        <center><h1>cloudeebus</h1></center>
+        <br>
+		<textarea style="width:80%" rows="32" id="script">
+var manifest = {
+	name: "cloudeebus",
+	key: "secret",
+	permissions: [
+		"org.cloudeebus.Sample"
+	]
+};
+
+var sampleProxy = null;
+
+cloudeebus.log = function(msg) {
+  document.getElementById("log").innerHTML += msg + "\n";
+}
+
+function logCB(result) {
+  cloudeebus.log(JSON.stringify(result));
+}
+
+function errorCB(error) {
+  cloudeebus.log(error.desc ? error.desc : error);
+}
+
+function gotAddResult(aSum) {
+  cloudeebus.log("gotAddResult: " + aSum);
+//  sampleProxy.Release();
+}
+
+function signalHandler(aSum) {
+  cloudeebus.log("signal 'ResultChanged': " + aSum);
+}
+
+function gotProxy(proxy) {
+  logCB(proxy);
+  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
+  for (var i=-10; i<10; i++)
+    proxy.Add(i,i*2,gotAddResult,errorCB);
+  sampleProxy = proxy;
+  
+}
+
+function connectSuccess() {
+  cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
+}
+
+cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+</textarea>
+		<br>
+		<input type="button" value="run script" onclick="evalScript()"/>
+		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-x: auto; overflow-y: auto; background-color: #faa;"></pre>
+   </body>
+</html>

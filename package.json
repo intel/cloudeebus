@@ -1,11 +1,12 @@
 {
   "name": "cloudeebus",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Javascript-DBus bridge",
   "author": "Luc Yriarte <luc.yriarte@intel.com>",
   "maintainers": [
       "Luc Yriarte <luc.yriarte@intel.com>",
-      "Christophe Guiraud <christophe.guiraud@intel.com>"
+      "Christophe Guiraud <christophe.guiraud@intel.com>",
+      "Frederic Paut <frederic.paut@intel.com>"
   ],
   "homepage": "https://github.com/01org/cloudeebus/wiki",
   "repository": {"type": "git","url": "git://github.com/01org/cloudeebus.git"},

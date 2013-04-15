@@ -59,8 +59,14 @@ dbus.ProxyObject = function(busConnection, busName, objectPath) {
 	this.busConnection = busConnection; 
 	this.busName = busName; 
 	this.objectPath = objectPath; 
+	this.interfaceProxies = {};
 	this.handlers = {};
 	return this;
+};
+
+
+dbus.ProxyObject.prototype.getInterface = function(ifName) {
+	return this.interfaceProxies[ifName];
 };
 
 
@@ -69,16 +75,18 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	var self = this; 
 
 	function getAllPropertiesSuccessCB(props) {
+		var ifProxy = self.interfaceProxies[self.propInterfaces[self.propInterfaces.length-1]];
 		for (var prop in props)
-			self[prop] = props[prop];
+			ifProxy[prop] = self[prop] = props[prop];
 		getAllPropertiesNextInterfaceCB();
 	}
 	
 	function getAllPropertiesNextInterfaceCB() {
+		self.propInterfaces.pop();
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces.pop()], 
+				[self.propInterfaces[self.propInterfaces.length-1]], 
 				getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
@@ -96,6 +104,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		var supportDBusProperties = false;
 		for (var i=0; i < interfaces.length; i++) {
 			var ifName = interfaces[i].attributes.getNamedItem("name").value;
+			self.interfaceProxies[ifName] = new dbus.ProxyObject(self.busConnection, self.busName, self.objectPath);
 			if (ifName == "org.freedesktop.DBus.Properties")
 				supportDBusProperties = true;
 			var hasProperties = false;
@@ -113,9 +122,10 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 						}
 						metChild = metChild.nextSibling;
 					}
-					self._addMethod(ifName, 
-							ifChild.attributes.getNamedItem("name").value, 
-							nArgs, signature);
+					var metName = ifChild.attributes.getNamedItem("name").value;
+					if (!self[metName])
+						self._addMethod(ifName, metName, nArgs, signature);
+					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs, signature);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -128,7 +138,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces.pop()], 
+				[self.propInterfaces[self.propInterfaces.length-1]], 
 				getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}

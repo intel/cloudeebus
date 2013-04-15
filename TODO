@@ -1,6 +1,5 @@
 Distribution:
 -------------
-- port on node.js, distribute as a node.js module
 - yocto layer
 - investigate javascript library minimizing / obfuscation.
 
@@ -19,4 +18,4 @@ API style:
 DBus service support:
 ---------------------
 - support publishing a DBus service
-
+- support sending signals

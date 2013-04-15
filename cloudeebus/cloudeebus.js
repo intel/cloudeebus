@@ -55,6 +55,25 @@ dbus.BusConnection.prototype.getObject = function(busName, objectPath, introspec
 
 /*****************************************************************************/
 
+dbus.Request = function(proxy, onsuccess, onerror) {
+	this.proxy = proxy; 
+	this.error = null;
+	this.result = null;
+	this.onsuccess = onsuccess;
+	this.onerror = onerror;
+    return this;
+};
+
+dbus.Request.prototype.then = function(onsuccess, onerror) {
+	this.onsuccess = onsuccess;
+	this.onerror = onerror;
+	return this;
+};
+
+
+
+/*****************************************************************************/
+
 dbus.ProxyObject = function(busConnection, busName, objectPath) {
 	this.busConnection = busConnection; 
 	this.busName = busName; 
@@ -86,8 +105,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
 			self.propInterfaces = null;
@@ -138,8 +156,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}
 		else {
@@ -150,7 +167,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	}
 
 	// call Introspect on self
-	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
+	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", []).then(introspectSuccessCB, errorCB);
 };
 
 
@@ -159,44 +176,40 @@ dbus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signatur
 	var self = this;
 	
 	self[method] = function() {
-		if (arguments.length < nArgs || arguments.length > nArgs + 2)
-			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
 		var args = [];
-		var successCB = null;
-		var errorCB = null;
 		for (var i=0; i < nArgs; i++ )
 			args.push(arguments[i]);
-		if (arguments.length > nArgs)
-			successCB = arguments[nArgs];
-		if (arguments.length > nArgs + 1)
-			errorCB = arguments[nArgs + 1];
-		self.callMethod(ifName, method, args, successCB, errorCB, signature);
-	};
-	
+		return self.callMethod(ifName, method, args, signature);
+	};	
 };
 
 
-dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB, signature) {
+dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
 	
 	var self = this; 
+	var request = new dbus.Request(this);
+	
 
 	function callMethodSuccessCB() {
-		if (successCB) {
+		request.result = arguments;
+		if (request.onsuccess) {
 			try {
-				successCB.apply(self, arguments);
+				request.onsuccess.apply(request, request.result);
 			}
 			catch (e) {
 				dbus.log("Method callback exception: " + e);
-				if (errorCB)
-					errorCB(e);
+				request.error = e;
+				if (request.onerror)
+					request.onerror.apply(request, e);
 			}
 		}
 	}
 
 	function callMethodErrorCB(error) {
 		dbus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.message);
-		if (errorCB)
-			errorCB(error.message);
+		request.error = error.desc;
+		if (request.onerror)
+			request.onerror.apply(request, request.error);
 	}
 
 	var dbusMsg = Object.create(dbus.DBusMessage, {
@@ -217,6 +230,7 @@ dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB
 	dbusMsg.on("error", callMethodErrorCB);
 
 	dbusMsg.send();
+	return request;
 };
 
 

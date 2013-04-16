@@ -46,7 +46,7 @@ function gotNotifProxy(proxy) {
 }
 
 function gotBusProxy(proxy) {
-  proxy.ListNames(logCB, errorCB);
+  proxy.ListNames().then(logCB, errorCB);
 }
 
 function connectSuccess() {

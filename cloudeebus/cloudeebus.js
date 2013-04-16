@@ -519,27 +519,18 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 	var self = this;
 	
 	self[method] = function() {
-		if (arguments.length < nArgs || arguments.length > nArgs + 2)
-			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
 		var args = [];
-		var successCB = null;
-		var errorCB = null;
 		for (var i=0; i < nArgs; i++ )
 			args.push(arguments[i]);
-		if (arguments.length > nArgs)
-			successCB = arguments[nArgs];
-		if (arguments.length > nArgs + 1)
-			errorCB = arguments[nArgs + 1];
-		self.callMethod(ifName, method, args).then(successCB, errorCB);
-	};
-	
+		return self.callMethod(ifName, method, args);
+	};	
 };
 
 cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args) {
 	
 	var self = this;
-	var request = new cloudeebus.Request(this, successCB, errorCB);
-
+	var request = new cloudeebus.Request(this);
+	
 	function callMethodSuccessCB(str) {
 		request.result = eval(str);
 		if (request.onsuccess) {

@@ -535,7 +535,7 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 	
 };
 
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args) {
 	
 	var self = this;
 	var request = new cloudeebus.Request(this, successCB, errorCB);
@@ -544,12 +544,13 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 		request.result = eval(str);
 		if (request.onsuccess) {
 			try { // calling dbus hook object function for un-translated types
-				request.onsuccess.apply(request.proxy, request.result);
+				request.onsuccess.apply(request, request.result);
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
+				request.error = e;
 				if (request.onerror)
-					request.onerror(e);
+					request.onerror.apply(request, e);
 			}
 		}
 	}
@@ -558,7 +559,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
 		request.error = error.desc;
 		if (request.onerror)
-			request.onerror(request.error);
+			request.onerror.apply(request, request.error);
 	}
 
 	var arglist = [

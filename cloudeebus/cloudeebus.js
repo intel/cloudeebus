@@ -476,17 +476,20 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			while (ifChild) {
 				if (ifChild.nodeName == "method") {
 					var nArgs = 0;
+					var signature = "";
 					var metChild = ifChild.firstChild;
 					while (metChild) {
 						if (metChild.nodeName == "arg" &&
-							metChild.attributes.getNamedItem("direction").value == "in")
+							metChild.attributes.getNamedItem("direction").value == "in") {
+								signature += metChild.attributes.getNamedItem("type").value;
 								nArgs++;
+						}
 						metChild = metChild.nextSibling;
 					}
 					var metName = ifChild.attributes.getNamedItem("name").value;
 					if (!self[metName])
-						self._addMethod(ifName, metName, nArgs);
-					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs);
+						self._addMethod(ifName, metName, nArgs, signature);
+					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs, signature);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -514,7 +517,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 };
 
 
-cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
 
 	var self = this;
 	
@@ -522,11 +525,11 @@ cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
 		var args = [];
 		for (var i=0; i < nArgs; i++ )
 			args.push(arguments[i]);
-		return self.callMethod(ifName, method, args);
+		return self.callMethod(ifName, method, args, signature);
 	};	
 };
 
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
 	
 	var self = this;
 	var request = new cloudeebus.Request(this);

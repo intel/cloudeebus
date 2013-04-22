@@ -28,7 +28,7 @@ var dbus = { // hook object for dbus types not translated by python-json
 
 /*****************************************************************************/
 
-var cloudeebus = window.cloudeebus = {version: "0.3.0"};
+var cloudeebus = window.cloudeebus = {version: "0.3.1"};
 
 cloudeebus.reset = function() {
 	cloudeebus.sessionBus = null;

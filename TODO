@@ -20,7 +20,3 @@ DBus service support:
 ---------------------
 - support sending signals
 
-
-Access control:
----------------
-- support restrictions on websocket origin domain

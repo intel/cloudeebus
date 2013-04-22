@@ -1,5 +1,5 @@
 {
-  "name": "cloudeebus",
+  "name": "node-dbus-proxy",
   "version": "0.3.1",
   "description": "Javascript-DBus bridge",
   "author": "Luc Yriarte <luc.yriarte@intel.com>",

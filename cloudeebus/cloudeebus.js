@@ -544,7 +544,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 			cloudeebus.log("Method callback exception: " + e);
 			request.error = e;
 			if (request.onerror)
-				request.onerror.apply(request, e);
+				request.onerror.apply(request, [request.error]);
 		}
 	}
 
@@ -552,7 +552,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
 		request.error = error.desc;
 		if (request.onerror)
-			request.onerror.apply(request, request.error);
+			request.onerror.apply(request, [request.error]);
 	}
 
 	var arglist = [

@@ -81,7 +81,7 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 		if (manifest)
 			cloudeebus.wampSession.authreq(
 					manifest.name, 
-					{permissions: JSON.stringify(manifest.permissions)}
+					{permissions: manifest.permissions}
 				).then(onWAMPSessionChallengedCB, onWAMPSessionAuthErrorCB);
 		else
 			cloudeebus.wampSession.authreq().then(function() {

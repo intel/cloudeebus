@@ -18,15 +18,15 @@
 #
 # Luc Yriarte <luc.yriarte@intel.com>
 # Christophe Guiraud <christophe.guiraud@intel.com>
-# Frederic PAUT <frederic.paut@intel.com>
+# Frederic Paut <frederic.paut@intel.com>
 #
 
 from setuptools import setup
 
 setup(name = "cloudeebus",
-	version = "0.3.1",
+	version = "0.3.2",
 	description = "Javascript-DBus bridge",
-	author = "Luc Yriarte, Christophe Guiraud, Frederic PAUT",
+	author = "Luc Yriarte, Christophe Guiraud, Frederic Paut",
 	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com, frederic.paut@intel.com",
 	url = "https://github.com/01org/cloudeebus/wiki",
 	license = "http://www.apache.org/licenses/LICENSE-2.0",
@@ -34,7 +34,7 @@ setup(name = "cloudeebus",
 	packages = ["cloudeebus"],
 	data_files = [("cloudeebus" ,["AUTHORS", "README.md", "LICENSE"])],
 	platforms = ("Any"),
-	install_requires = ["setuptools", "autobahn==0.5.2"],
+	install_requires = ["setuptools", "autobahn>=0.5.8"],
 	classifiers = ["License :: OSI Approved :: Apache Software License",
 		  "Development Status :: 3 - Alpha",
 		  "Environment :: Console",

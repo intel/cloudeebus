@@ -246,8 +246,9 @@ cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, o
 		objectJS.wrapperFunc[method] = function() {
 			var result;
 			var methodId = arguments[0];
-			var callDict = JSON.parse(arguments[1]);
 			try {
+				// affectation of callDict in eval, otherwise dictionary(='{}') interpreted as block of code by eval
+				eval("var callDict = " + arguments[1]);
 				result = funcToCall.apply(objectJS, callDict.args);
 				service._returnMethod(methodId, callDict.callIndex, true, result);
 			}

@@ -17,7 +17,7 @@
    <body>
         <center><h1>cloudeebus</h1></center>
         <br>
-		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample1"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="i" name="result"/></signal></interface><interface name="org.cloudeebus.Sample2"><method name="Div"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method></interface></node>';
+		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample1"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><method name="Variant"><arg type="d" name="arg1"/><arg type="d" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="d" name="result"/></signal></interface><interface name="org.cloudeebus.Sample2"><method name="Div"><arg type="d" name="arg1"/><arg type="d" name="arg2"/><arg type="d" name="result" direction="out"/></method></interface></node>';
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -35,6 +35,9 @@ sampleObjectHandler = {
     this.ResultChanged(a+b);
     return a+b;
   }, 
+  Variant: function(a) {
+    return a;
+  }, 
   Release: function() {
     cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
     cloudeebus.SessionBus().service.remove(logCB, errorCB);
@@ -42,6 +45,7 @@ sampleObjectHandler = {
   interfaceProxies : {
     "org.cloudeebus.Sample2" : {
       Div: function(a,b) {
+    	this.ResultChanged(a/b);
         return a/b;
       } 
     }
@@ -71,9 +75,6 @@ sampleObjectHandler2 = {
 function serviceAdded(service) {
   var agentName = "/org/cloudeebus/Sample"; // = DBUS object name
   cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler, logCB, errorCB);
-  
-  agentName = agentName + "2";
-  cloudeebus.SessionBus().service.addAgent(agentName, sampleXml, sampleObjectHandler2, logCB, errorCB);
 }
 
 function connectSuccess() {

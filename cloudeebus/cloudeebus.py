@@ -51,7 +51,7 @@ from xml.etree.ElementTree import XMLParser
 
 ###############################################################################
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
@@ -428,7 +428,9 @@ class CloudeebusService:
     support for sending DBus messages and registering for DBus signals
     '''
     def __init__(self, permissions):
-        self.permissions = permissions;
+        self.permissions = {};
+        self.permissions['permissions'] = permissions['permissions']
+        self.permissions['authextra'] = permissions['authextra']
         self.proxyObjects = {}
         self.proxyMethods = {}
         self.pendingCalls = []
@@ -448,7 +450,7 @@ class CloudeebusService:
         if not self.proxyObjects.has_key(id):
             if not OPENDOOR:
                 # check permissions, array.index throws exception
-                self.permissions.index(serviceName)
+                self.permissions['permissions'].index(serviceName)
             bus = cache.dbusConnexion(busName)
             self.proxyObjects[id] = bus.get_object(serviceName, objectName)
         return self.proxyObjects[id]
@@ -475,7 +477,7 @@ class CloudeebusService:
         
         if not OPENDOOR:
             # check permissions, array.index throws exception
-            self.permissions.index(list[1])
+            self.permissions['permissions'].index(list[1])
         
         # check if a handler exists
         sigId = "#".join(list)
@@ -658,15 +660,15 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
     
     
     def getAuthPermissions(self, key, extra):
-        return json.loads(extra.get("permissions", "[]"))
-    
+         return {'permissions': extra.get("permissions", None),
+                 'authextra': extra.get("authextra", None)}   
     
     def getAuthSecret(self, key):
         secret = CREDENTIALS.get(key, None)
         if secret is None:
             return None
         # secret must be of str type to be hashed
-        return secret.encode('utf-8')
+        return str(secret)
     
 
     def onAuthenticated(self, key, permissions):
@@ -685,8 +687,8 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
             if key is None:
                 raise Exception("Authentication failed")
             # check permissions, array.index throws exception
-            for req in permissions:
-                WHITELIST.index(req)
+            for req in permissions['permissions']:
+                    WHITELIST.index(req);
         # create cloudeebus service instance
         self.cloudeebusService = CloudeebusService(permissions)
         # register it for RPC

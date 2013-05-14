@@ -28,7 +28,10 @@ var dbus = { // hook object for dbus types not translated by python-json
 
 /*****************************************************************************/
 
-var cloudeebus = window.cloudeebus = {version: "0.3.1"};
+var cloudeebus = window.cloudeebus = {
+		version: "0.3.2",
+		minVersion: "0.3.2"
+};
 
 cloudeebus.reset = function() {
 	cloudeebus.sessionBus = null;
@@ -42,17 +45,30 @@ cloudeebus.log = function(msg) {
 };
 
 
+cloudeebus.versionCheck = function(version) {
+	var ver = version.split(".");
+	var min = cloudeebus.minVersion.split(".");
+	for (var i=0; i<ver.length; i++) {
+		if (Number(ver[i]) > Number(min[i]))
+			return true;
+		if (Number(ver[i]) < Number(min[i]))
+			return false;
+	}
+	return true;
+};
+
+
 cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 	cloudeebus.reset();
 	cloudeebus.uri = uri;
 	
 	function onCloudeebusVersionCheckCB(version) {
-		if (cloudeebus.version == version) {
+		if (cloudeebus.versionCheck(version)) {
 			cloudeebus.log("Connected to " + cloudeebus.uri);
 			if (successCB)
 				successCB();
 		} else {
-			var errorMsg = "Cloudeebus server version " + version + " and client version " + cloudeebus.version + " mismatch";
+			var errorMsg = "Cloudeebus server version " + version + " unsupported, need version " + cloudeebus.minVersion + " or superior";
 			cloudeebus.log(errorMsg);
 			if (errorCB)
 				errorCB(errorMsg);
@@ -81,7 +97,7 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 		if (manifest)
 			cloudeebus.wampSession.authreq(
 					manifest.name, 
-					{permissions: JSON.stringify(manifest.permissions)}
+					{permissions: manifest.permissions}
 				).then(onWAMPSessionChallengedCB, onWAMPSessionAuthErrorCB);
 		else
 			cloudeebus.wampSession.authreq().then(function() {

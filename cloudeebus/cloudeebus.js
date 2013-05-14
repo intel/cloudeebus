@@ -195,7 +195,7 @@ cloudeebus.Service.prototype.add = function(successCB, errorCB) {
 	
 	function ServiceAddedSuccessCB(serviceName) {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				successCB(self);
 			}
 			catch (e) {
@@ -216,7 +216,7 @@ cloudeebus.Service.prototype.add = function(successCB, errorCB) {
 cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
 	function ServiceRemovedSuccessCB(serviceName) {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				successCB(serviceName);
 			}
 			catch (e) {
@@ -327,7 +327,7 @@ cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, 
 cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, objectJS, successCB, errorCB) {
 	function ServiceAddAgentSuccessCB(objPath) {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				successCB(objPath);
 			}
 			catch (e) {
@@ -336,7 +336,7 @@ cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, object
 		}
 	}
 	
-	try { // calling dbus hook object function for un-translated types
+	try {
 		this._createWrapper(xmlTemplate, objectPath, objectJS);
 	}
 	catch (e) {
@@ -357,7 +357,7 @@ cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, object
 cloudeebus.Service.prototype.delAgent = function(objectPath, successCB, errorCB) {
 	function ServiceDelAgentSuccessCB(agent) {
 		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				successCB(agent);
 			}
 			catch (e) {

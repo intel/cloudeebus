@@ -199,7 +199,7 @@ cloudeebus.Service.prototype.add = function(successCB, errorCB) {
 				successCB(self);
 			}
 			catch (e) {
-				alert(arguments.callee.name + "-> Method callback exception: " + e);
+				alert("Exception adding service " + serviceName + " : " + e);
 			}
 		}
 	}
@@ -220,7 +220,7 @@ cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
 				successCB(serviceName);
 			}
 			catch (e) {
-				alert(arguments.callee.name + "-> Method callback exception: " + e);
+				alert("Exception removing service " + serviceName + " : " + e);
 			}
 		}
 	}
@@ -269,7 +269,7 @@ cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, o
 				service._returnMethod(methodId, callDict.callIndex, true, result);
 			}
 			catch (e) {
-				cloudeebus.log(arguments.callee.name + "-> Method callback exception: " + e);
+				cloudeebus.log("Method " + ifName + "." + method + " call on " + objectPath + " exception: " + e);
 				service._returnMethod(methodId, callDict.callIndex, false, e.message);
 			}
 		};
@@ -331,7 +331,7 @@ cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, object
 				successCB(objPath);
 			}
 			catch (e) {
-				alert(arguments.callee.name + "-> Method callback exception: " + e);
+				alert("Exception adding agent " + objectPath + " : " + e);
 			}
 		}
 	}
@@ -340,7 +340,7 @@ cloudeebus.Service.prototype.addAgent = function(objectPath, xmlTemplate, object
 		this._createWrapper(xmlTemplate, objectPath, objectJS);
 	}
 	catch (e) {
-		alert(arguments.callee.name + "-> Method callback exception: " + e);
+		alert("Exception creating agent wrapper " + objectPath + " : " + e);
 		errorCB(e.desc);
 		return;
 	}
@@ -361,7 +361,7 @@ cloudeebus.Service.prototype.delAgent = function(objectPath, successCB, errorCB)
 				successCB(agent);
 			}
 			catch (e) {
-				alert(arguments.callee.name + "-> Method callback exception: " + e);
+				alert("Exception deleting agent " + objectPath + " : " + e);
 			}
 		}
 	}

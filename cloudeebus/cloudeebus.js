@@ -248,7 +248,7 @@ cloudeebus.Service.prototype._searchMethod = function(ifName, method, objectJS) 
 	}
 
 	return funcToCall;
-}
+};
 
 cloudeebus.Service.prototype._addMethod = function(objectPath, ifName, method, objectJS) {
 
@@ -306,7 +306,7 @@ cloudeebus.Service.prototype._createWrapper = function(xmlTemplate, objectPath, 
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlTemplate, "text/xml");
 	var ifXml = xmlDoc.getElementsByTagName("interface");
-	objectJS.wrapperFunc = []
+	objectJS.wrapperFunc = [];
 	for (var i=0; i < ifXml.length; i++) {
 		var ifName = ifXml[i].attributes.getNamedItem("name").value;
 		var ifChild = ifXml[i].firstChild;

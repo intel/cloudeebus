@@ -153,6 +153,7 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 
 cloudeebus.Request = function(proxy, onsuccess, onerror) {
 	this.proxy = proxy; 
+	this.readyState = "pending";
 	this.error = null;
 	this.result = null;
 	this.onsuccess = onsuccess;
@@ -285,6 +286,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 	var request = new cloudeebus.Request(this);
 	
 	function callMethodSuccessCB(str) {
+		request.readyState = "done";
 		try { // calling dbus hook object function for un-translated types
 			request.result = eval(str);
 			if (request.onsuccess)
@@ -300,6 +302,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 
 	function callMethodErrorCB(error) {
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
+		request.readyState = "done";
 		request.error = error.desc;
 		if (request.onerror)
 			request.onerror.apply(request, [request.error]);

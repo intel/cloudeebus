@@ -24,7 +24,7 @@
 from setuptools import setup
 
 setup(name = "cloudeebus",
-	version = "0.3.2",
+	version = "0.4.0",
 	description = "Javascript-DBus bridge",
 	author = "Luc Yriarte, Christophe Guiraud, Frederic Paut",
 	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com, frederic.paut@intel.com",

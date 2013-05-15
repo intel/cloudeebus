@@ -287,16 +287,14 @@ cloudeebus.Service.prototype._addSignal = function(objectPath, ifName, signal, o
 			methodExist = true;
 		} else {
 			objectJS.interfaceProxies[ifName][signal] = function() {
-				var result = JSON.parse(arguments[0]);
-				service.emitSignal(objectPath, signal, result);
+				service.emitSignal(objectPath, signal, arguments[0]);
 			};
 		return;
 	}
 		
 	if ((objectJS[signal] == undefined || objectJS[signal] == null) && !methodExist) 
 		objectJS[signal] = function() {
-			var result = JSON.parse(arguments[0]);
-			service.emitSignal(objectPath, signal, result);
+			service.emitSignal(objectPath, signal, arguments[0]);
 		};
 	else
 		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");

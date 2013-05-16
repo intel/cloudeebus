@@ -538,9 +538,10 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 	function callMethodSuccessCB(str) {
 		request.readyState = "done";
 		try { // calling dbus hook object function for un-translated types
-			request.result = eval(str);
+			var result = eval(str);
+			request.result = result[0];
 			if (request.onsuccess)
-				request.onsuccess.apply(request, request.result);
+				request.onsuccess.apply(request, result);
 		}
 		catch (e) {
 			cloudeebus.log("Method callback exception: " + e);

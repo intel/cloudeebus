@@ -40,8 +40,20 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
+function gotDictResult(result) {
+  cloudeebus.log("gotDictResult: " + JSON.stringify(result));
+  cloudeebus.log("Name: " + result.Name);
+}
+
 function gotDivResult(result) {
   cloudeebus.log("gotDivResult: " + result);
+  var dictionary = {Name: "Mickey",
+  				 Sisters: [""], 
+  				 Married: true,
+  				 Divorced: 0,
+  				 Friends: ["Donald", "Dingo"],
+  				 Others: [""]};
+  sampleProxy.Variant(dictionary,gotDictResult,errorCB);  
 //  sampleProxy.Release();
 }
 
@@ -56,12 +68,20 @@ function signalHandler(result) {
 }
 
 function gotProxy(proxy) {
-  logCB(proxy);
-  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
-  logCB('Addition');
-  for (var i=-10; i<10; i++)
-    proxy.Add(i,i*2,gotAddResult,errorCB);
-  sampleProxy = proxy;
+	sampleProxy = proxy;
+   logCB(sampleProxy);
+  if (0) {
+    proxy.Release();
+    return;
+   } else {
+	  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
+	  logCB('Addition');
+	    proxy.Add(4,5,gotAddResult,errorCB);
+	    return;
+	  
+	  for (var i=-10; i<10; i++)
+	    proxy.Add(i,i*2,gotAddResult,errorCB);
+  }
   
 }
 

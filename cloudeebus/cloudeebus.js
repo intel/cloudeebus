@@ -185,7 +185,7 @@ cloudeebus.FutureResolver.prototype.resolve = function(value, sync) {
 	if (then) {
 		var self = this;		
 		var acceptCallback = function(arg) {
-			self.accept(arg, true);
+			self.resolve(arg, true);
 		};	
 		var rejectCallback = function(arg) {
 			self.reject(arg, true);

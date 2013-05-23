@@ -431,12 +431,24 @@ cloudeebus.FutureResolver.prototype.resolve = function(value, sync) {
 	if (this.resolved)
 		return;
 	
-	try {
-		this.accept(value, sync);
+	var then = (value && value.then && value.then.apply) ? value.then : null;
+	if (then) {
+		var self = this;		
+		var acceptCallback = function(arg) {
+			self.accept(arg, true);
+		};	
+		var rejectCallback = function(arg) {
+			self.reject(arg, true);
+		};
+		try {
+			then.apply(value, [acceptCallback, rejectCallback]);
+		}
+		catch (e) {
+			this.reject(e, true);
+		}
 	}
-	catch (e) {
-		this.reject(e, sync);
-	}
+	
+	this.accept(value, sync);
 };
 
 
@@ -512,7 +524,7 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 		acceptWrapper = function(arg) {
 			try {
 				var value = acceptCB.apply(future, [arg]);
-				resolver.accept(value, true);
+				resolver.resolve(value, true);
 			}
 			catch (e) {
 				resolver.reject(e, true);
@@ -527,7 +539,7 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 		rejectWrapper = function(arg) {
 			try {
 				var value = rejectCB.apply(future, [arg]);
-				resolver.reject(value, true);
+				resolver.resolve(value, true);
 			}
 			catch (e) {
 				resolver.reject(e, true);

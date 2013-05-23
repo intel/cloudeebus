@@ -676,17 +676,17 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 		function callMethodSuccessCB(str) {
 			try { // calling dbus hook object function for un-translated types
 				var result = eval(str);
-				resolver.accept(result[0]);
+				resolver.accept(result[0], true);
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
-				resolver.reject(e);
+				resolver.reject(e, true);
 			}
 		}
 
 		function callMethodErrorCB(error) {
 			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
-			resolver.reject(error.desc);
+			resolver.reject(error.desc, true);
 		}
 
 		var arglist = [

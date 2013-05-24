@@ -319,21 +319,21 @@ cloudeebus.Future.prototype.done = function(acceptCB, rejectCB) {
 
 cloudeebus.Future.resolve = function(value) {
 	var future = new cloudeebus.Future();
-	future.resolver.resolve(value, true);
+	future.resolver.resolve(value);
 	return future;
 };
 
 
 cloudeebus.Future.accept = function(value) {
 	var future = new cloudeebus.Future();
-	future.resolver.accept(value, true);
+	future.resolver.accept(value);
 	return future;
 };
 
 
 cloudeebus.Future.reject = function(value) {
 	var future = new cloudeebus.Future();
-	future.resolver.reject(value, true);
+	future.resolver.reject(value);
 	return future;
 };
 

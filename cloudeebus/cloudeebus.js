@@ -256,8 +256,10 @@ cloudeebus.Future = function(init) {
 
 
 cloudeebus.Future.prototype.appendWrappers = function(acceptWrapper, rejectWrapper) {
-	this._acceptWrappers.push(acceptWrapper);
-	this._rejectWrappers.push(rejectWrapper);
+	if (acceptWrapper)
+		this._acceptWrappers.push(acceptWrapper);
+	if (rejectWrapper)
+		this._rejectWrappers.push(rejectWrapper);
 	if (this.state == "accepted")
 		_processWrappersAsync(this._acceptWrappers, this.result);
 	if (this.state == "rejected")
@@ -307,6 +309,11 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 
 cloudeebus.Future.prototype["catch"] = function(rejectCB) {
 	return this.then(undefined,rejectCB);
+};
+
+
+cloudeebus.Future.prototype.done = function(acceptCB, rejectCB) {
+	this.appendWrappers(acceptCB,rejectCB);
 };
 
 

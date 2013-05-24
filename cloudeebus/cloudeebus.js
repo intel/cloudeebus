@@ -305,6 +305,26 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 };
 
 
+cloudeebus.Future.resolve = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.resolve(value, true);
+	return future;
+};
+
+
+cloudeebus.Future.accept = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.accept(value, true);
+	return future;
+};
+
+
+cloudeebus.Future.reject = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.reject(value, true);
+	return future;
+};
+
 
 /*****************************************************************************/
 

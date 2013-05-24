@@ -305,6 +305,11 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 };
 
 
+cloudeebus.Future.prototype["catch"] = function(rejectCB) {
+	return this.then(undefined,rejectCB);
+};
+
+
 cloudeebus.Future.resolve = function(value) {
 	var future = new cloudeebus.Future();
 	future.resolver.resolve(value, true);

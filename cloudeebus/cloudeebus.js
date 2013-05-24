@@ -338,6 +338,79 @@ cloudeebus.Future.reject = function(value) {
 };
 
 
+cloudeebus.Future.any = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var acceptCallback = function(arg) {
+		resolver.resolve(arg, true);
+	};
+	var rejectCallback = function(arg) {
+		resolver.reject(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) 
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+	return future;
+};
+
+
+cloudeebus.Future.every = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var index = 0;
+	var countdown = arguments.length;
+	var args = new Array(countdown);
+	var rejectCallback = function(arg) {
+		resolver.reject(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) {
+			var acceptCallback = function(arg) {
+				args[index] = arg;
+				countdown--;
+				if (countdown == 0)
+					resolver.resolve(args, true);
+			};
+			index++;
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+		}
+	
+	return future;
+};
+
+
+cloudeebus.Future.some = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var index = 0;
+	var countdown = arguments.length;
+	var args = new Array(countdown);
+	var acceptCallback = function(arg) {
+		resolver.resolve(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) {
+			var rejectCallback = function(arg) {
+				args[index] = arg;
+				countdown--;
+				if (countdown == 0)
+					resolver.reject(args, true);
+			};
+			index++;
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+		}
+	
+	return future;
+};
+
+
+
 /*****************************************************************************/
 
 cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {

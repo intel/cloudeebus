@@ -149,19 +149,34 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 };
 
 
-cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB, errorCB) {
+cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
 	
-	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
 	
-	function busServiceAddedSuccessCB(service) {
-		self.service = cloudeebusService;
-		if (successCB)
-			successCB(cloudeebusService);
-	}
+	var future = new cloudeebus.Future(function (resolver) {
+	  cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
-	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
-	return cloudeebusService;
+	  function busServiceAddedSuccessCB(service) {
+		  self.service = cloudeebusService;
+		  try {
+			  var result = [cloudeebusService];
+			  resolver.accept(result[0], true);
+		  }
+		  catch (e) {
+			  cloudeebus.log("Method callback exception: " + e);
+			  resolver.reject(e, true);
+		  }		
+	  }
+	
+	  function busServiceErrorSuccessCB(error) {
+		  self.service = null;
+		  resolver.reject(error, true);
+	  }
+	
+	  cloudeebusService.add(this).then(busServiceAddedSuccessCB, busServiceErrorSuccessCB);
+	});
+	
+	return future;
 };
 
 cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {
@@ -190,27 +205,35 @@ cloudeebus.Service = function(session, busConnection, name) {
 	return this;
 };
 
-cloudeebus.Service.prototype.add = function(successCB, errorCB) {
+cloudeebus.Service.prototype.add = function(future) {
 	var self = this;
+	self.future = future;
 	
 	function ServiceAddedSuccessCB(serviceName) {
-		if (successCB) {
-			try {
-				successCB(self);
-			}
-			catch (e) {
-				alert("Exception adding service " + serviceName + " : " + e);
-			}
+		try { // calling dbus hook object function for un-translated types
+			var resolver = self.future.resolver;
+			var result = [self];
+			resolver.accept(result[0], true);
 		}
+		catch (e) {
+			cloudeebus.log("Method callback exception: " + e);
+			resolver.reject(e, true);
+		}		
 	}
 	
+	function ServiceAddedErrorCB(error) {
+		cloudeebus.log("Error adding service method: " + self.name + ", error: " + error.desc);
+		self.future.resolver.reject(error.desc, true);
+	}
+
 	var arglist = [
 	    this.busConnection,
 	    this.name
 	    ];
 
 	// call dbusSend with bus type, destination, object, message and arguments
-	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, errorCB);
+	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, ServiceAddedErrorCB);
+	return future;
 };
 
 cloudeebus.Service.prototype.remove = function(successCB, errorCB) {

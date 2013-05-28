@@ -13,10 +13,9 @@ Proxy object properties:
 API style:
 ----------
 - use "Promises" pattern for asynchronous APIs 
-- support adding DBus signatures / force JSON description of numbers as floats when needed 
+- force JSON description of numbers as floats when needed 
 
 
 DBus service support:
 ---------------------
 - support sending signals
-

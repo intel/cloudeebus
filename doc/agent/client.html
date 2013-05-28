@@ -26,6 +26,7 @@ var manifest = {
 	]
 };
 
+
 var sampleProxy = null;
 
 cloudeebus.log = function(msg) {
@@ -53,14 +54,14 @@ function gotDivResult(result) {
   				 Divorced: 0,
   				 Friends: ["Donald", "Dingo"],
   				 Others: [""]};
-  sampleProxy.Variant(dictionary,gotDictResult,errorCB);  
+  sampleProxy.Variant(dictionary).then(gotDictResult,errorCB);  
 //  sampleProxy.Release();
 }
 
 function gotAddResult(result) {
   cloudeebus.log("gotAddResult: " + result);
   logCB('Divide by 3.33');
-  sampleProxy.Div(result,3.33,gotDivResult,errorCB);
+  sampleProxy.Div(result,3.33).then(gotDivResult,errorCB);
 }
 
 function signalHandler(result) {
@@ -76,11 +77,9 @@ function gotProxy(proxy) {
    } else {
 	  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
 	  logCB('Addition');
-	    proxy.Add(4,5,gotAddResult,errorCB);
-	    return;
 	  
 	  for (var i=-10; i<10; i++)
-	    proxy.Add(i,i*2,gotAddResult,errorCB);
+	    proxy.Add(i,i*2).then(gotAddResult,errorCB);
   }
   
 }

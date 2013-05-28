@@ -29,7 +29,7 @@ var dbus = { // hook object for dbus types not translated by python-json
 /*****************************************************************************/
 
 var cloudeebus = window.cloudeebus = {
-		version: "0.3.2",
+		version: "0.4.0",
 		minVersion: "0.3.2"
 };
 
@@ -149,19 +149,34 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 };
 
 
-cloudeebus.BusConnection.prototype.addService = function(serviceName, successCB, errorCB) {
+cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
 	
-	cloudeebusService = new cloudeebus.Service(this.wampSession, this, serviceName);
 	
-	function busServiceAddedSuccessCB(service) {
-		self.service = cloudeebusService;
-		if (successCB)
-			successCB(cloudeebusService);
-	}
+	var future = new cloudeebus.Future(function (resolver) {
+	  cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
-	cloudeebusService.add(busServiceAddedSuccessCB, errorCB);
-	return cloudeebusService;
+	  function busServiceAddedSuccessCB(service) {
+		  self.service = cloudeebusService;
+		  try {
+			  var result = [cloudeebusService];
+			  resolver.accept(result[0], true);
+		  }
+		  catch (e) {
+			  cloudeebus.log("Method callback exception: " + e);
+			  resolver.reject(e, true);
+		  }		
+	  }
+	
+	  function busServiceErrorSuccessCB(error) {
+		  self.service = null;
+		  resolver.reject(error, true);
+	  }
+	
+	  cloudeebusService.add(this).then(busServiceAddedSuccessCB, busServiceErrorSuccessCB);
+	});
+	
+	return future;
 };
 
 cloudeebus.BusConnection.prototype.removeService = function(serviceName, successCB, errorCB) {
@@ -190,27 +205,35 @@ cloudeebus.Service = function(session, busConnection, name) {
 	return this;
 };
 
-cloudeebus.Service.prototype.add = function(successCB, errorCB) {
+cloudeebus.Service.prototype.add = function(future) {
 	var self = this;
+	self.future = future;
 	
 	function ServiceAddedSuccessCB(serviceName) {
-		if (successCB) {
-			try {
-				successCB(self);
-			}
-			catch (e) {
-				alert("Exception adding service " + serviceName + " : " + e);
-			}
+		try { // calling dbus hook object function for un-translated types
+			var resolver = self.future.resolver;
+			var result = [self];
+			resolver.accept(result[0], true);
 		}
+		catch (e) {
+			cloudeebus.log("Method callback exception: " + e);
+			resolver.reject(e, true);
+		}		
 	}
 	
+	function ServiceAddedErrorCB(error) {
+		cloudeebus.log("Error adding service method: " + self.name + ", error: " + error.desc);
+		self.future.resolver.reject(error.desc, true);
+	}
+
 	var arglist = [
 	    this.busConnection,
 	    this.name
 	    ];
 
 	// call dbusSend with bus type, destination, object, message and arguments
-	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, errorCB);
+	this.wampSession.call("serviceAdd", arglist).then(ServiceAddedSuccessCB, ServiceAddedErrorCB);
+	return future;
 };
 
 cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
@@ -401,6 +424,425 @@ cloudeebus.Service.prototype.emitSignal = function(objectPath, signalName, resul
 
 /*****************************************************************************/
 
+function _processWrappers(wrappers, value) {
+	for (var i=0; i<wrappers.length; i++)
+		wrappers[i](value);
+}
+
+
+function _processWrappersAsync(wrappers, value) {
+	var taskid = -1;
+	function processAsyncOnce() {
+		_processWrappers(wrappers, value);
+		clearInterval(taskid);
+	}
+	taskid = setInterval(processAsyncOnce, 200);
+}
+
+
+
+/*****************************************************************************/
+
+cloudeebus.FutureResolver = function(future) {
+	this.future = future;
+	this.resolved = null;
+    return this;
+};
+
+
+cloudeebus.FutureResolver.prototype.resolve = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var then = (value && value.then && value.then.apply) ? value.then : null;
+	if (then) {
+		var self = this;		
+		var acceptCallback = function(arg) {
+			self.resolve(arg, true);
+		};	
+		var rejectCallback = function(arg) {
+			self.reject(arg, true);
+		};
+		try {
+			then.apply(value, [acceptCallback, rejectCallback]);
+		}
+		catch (e) {
+			this.reject(e, true);
+		}
+	}
+	
+	this.accept(value, sync);
+};
+
+
+cloudeebus.FutureResolver.prototype.accept = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var future = this.future;
+	future.state = "accepted";
+	future.result = value;
+	
+	this.resolved = true;
+	if (sync)
+		_processWrappers(future._acceptWrappers, value);
+	else
+		_processWrappersAsync(future._acceptWrappers, value);
+};
+
+
+cloudeebus.FutureResolver.prototype.reject = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var future = this.future;
+	future.state = "rejected";
+	future.result = value;
+	
+	this.resolved = true;
+	if (sync)
+		_processWrappers(future._rejectWrappers, value);
+	else
+		_processWrappersAsync(future._rejectWrappers, value);
+};
+
+
+
+/*****************************************************************************/
+
+cloudeebus.Future = function(init) {
+	this.state = "pending";
+	this.result = null;
+	this._acceptWrappers = [];
+	this._rejectWrappers = [];
+	this.resolver = new cloudeebus.FutureResolver(this);
+	if (init) {
+		try {
+			init.apply(this, [this.resolver]);
+		}
+		catch (e) {
+			this.resolver.reject(e, true);
+		}
+	}
+    return this;
+};
+
+
+cloudeebus.Future.prototype.appendWrappers = function(acceptWrapper, rejectWrapper) {
+	this._acceptWrappers.push(acceptWrapper);
+	this._rejectWrappers.push(rejectWrapper);
+	if (this.state == "accepted")
+		_processWrappersAsync(this._acceptWrappers, this.result);
+	if (this.state == "rejected")
+		_processWrappersAsync(this._rejectWrappers, this.result);
+};
+
+
+cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var acceptWrapper, rejectWrapper;
+	
+	if (acceptCB)
+		acceptWrapper = function(arg) {
+			try {
+				var value = acceptCB.apply(future, [arg]);
+				resolver.resolve(value, true);
+			}
+			catch (e) {
+				resolver.reject(e, true);
+			}
+		};
+	else
+		acceptWrapper = function(arg) {
+			resolver.accept(arg, true);
+		};
+	
+	if (rejectCB)
+		rejectWrapper = function(arg) {
+			try {
+				var value = rejectCB.apply(future, [arg]);
+				resolver.resolve(value, true);
+			}
+			catch (e) {
+				resolver.reject(e, true);
+			}
+		};
+	else
+		rejectWrapper = function(arg) {
+			resolver.reject(arg, true);
+		};
+	
+	this.appendWrappers(acceptWrapper,rejectWrapper);
+	return future;
+};
+
+
+
+/*****************************************************************************/
+
+function _processWrappers(wrappers, value) {
+	for (var i=0; i<wrappers.length; i++)
+		wrappers[i](value);
+}
+
+
+function _processWrappersAsync(wrappers, value) {
+	var taskid = -1;
+	function processAsyncOnce() {
+		_processWrappers(wrappers, value);
+		clearInterval(taskid);
+	}
+	taskid = setInterval(processAsyncOnce, 200);
+}
+
+
+
+/*****************************************************************************/
+
+cloudeebus.FutureResolver = function(future) {
+	this.future = future;
+	this.resolved = null;
+    return this;
+};
+
+
+cloudeebus.FutureResolver.prototype.resolve = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var then = (value && value.then && value.then.apply) ? value.then : null;
+	if (then) {
+		var self = this;		
+		var acceptCallback = function(arg) {
+			self.resolve(arg, true);
+		};	
+		var rejectCallback = function(arg) {
+			self.reject(arg, true);
+		};
+		try {
+			then.apply(value, [acceptCallback, rejectCallback]);
+		}
+		catch (e) {
+			this.reject(e, true);
+		}
+	}
+	
+	this.accept(value, sync);
+};
+
+
+cloudeebus.FutureResolver.prototype.accept = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var future = this.future;
+	future.state = "accepted";
+	future.result = value;
+	
+	this.resolved = true;
+	if (sync)
+		_processWrappers(future._acceptWrappers, value);
+	else
+		_processWrappersAsync(future._acceptWrappers, value);
+};
+
+
+cloudeebus.FutureResolver.prototype.reject = function(value, sync) {
+	if (this.resolved)
+		return;
+	
+	var future = this.future;
+	future.state = "rejected";
+	future.result = value;
+	
+	this.resolved = true;
+	if (sync)
+		_processWrappers(future._rejectWrappers, value);
+	else
+		_processWrappersAsync(future._rejectWrappers, value);
+};
+
+
+
+/*****************************************************************************/
+
+cloudeebus.Future = function(init) {
+	this.state = "pending";
+	this.result = null;
+	this._acceptWrappers = [];
+	this._rejectWrappers = [];
+	this.resolver = new cloudeebus.FutureResolver(this);
+	if (init) {
+		try {
+			init.apply(this, [this.resolver]);
+		}
+		catch (e) {
+			this.resolver.reject(e, true);
+		}
+	}
+    return this;
+};
+
+
+cloudeebus.Future.prototype.appendWrappers = function(acceptWrapper, rejectWrapper) {
+	if (acceptWrapper)
+		this._acceptWrappers.push(acceptWrapper);
+	if (rejectWrapper)
+		this._rejectWrappers.push(rejectWrapper);
+	if (this.state == "accepted")
+		_processWrappersAsync(this._acceptWrappers, this.result);
+	if (this.state == "rejected")
+		_processWrappersAsync(this._rejectWrappers, this.result);
+};
+
+
+cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var acceptWrapper, rejectWrapper;
+	
+	if (acceptCB)
+		acceptWrapper = function(arg) {
+			try {
+				var value = acceptCB.apply(future, [arg]);
+				resolver.resolve(value, true);
+			}
+			catch (e) {
+				resolver.reject(e, true);
+			}
+		};
+	else
+		acceptWrapper = function(arg) {
+			resolver.accept(arg, true);
+		};
+	
+	if (rejectCB)
+		rejectWrapper = function(arg) {
+			try {
+				var value = rejectCB.apply(future, [arg]);
+				resolver.resolve(value, true);
+			}
+			catch (e) {
+				resolver.reject(e, true);
+			}
+		};
+	else
+		rejectWrapper = function(arg) {
+			resolver.reject(arg, true);
+		};
+	
+	this.appendWrappers(acceptWrapper,rejectWrapper);
+	return future;
+};
+
+
+cloudeebus.Future.prototype["catch"] = function(rejectCB) {
+	return this.then(undefined,rejectCB);
+};
+
+
+cloudeebus.Future.prototype.done = function(acceptCB, rejectCB) {
+	this.appendWrappers(acceptCB,rejectCB);
+};
+
+
+cloudeebus.Future.resolve = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.resolve(value);
+	return future;
+};
+
+
+cloudeebus.Future.accept = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.accept(value);
+	return future;
+};
+
+
+cloudeebus.Future.reject = function(value) {
+	var future = new cloudeebus.Future();
+	future.resolver.reject(value);
+	return future;
+};
+
+
+cloudeebus.Future.any = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var acceptCallback = function(arg) {
+		resolver.resolve(arg, true);
+	};
+	var rejectCallback = function(arg) {
+		resolver.reject(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) 
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+	return future;
+};
+
+
+cloudeebus.Future.every = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var index = 0;
+	var countdown = arguments.length;
+	var args = new Array(countdown);
+	var rejectCallback = function(arg) {
+		resolver.reject(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) {
+			var acceptCallback = function(arg) {
+				args[index] = arg;
+				countdown--;
+				if (countdown == 0)
+					resolver.resolve(args, true);
+			};
+			index++;
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+		}
+	
+	return future;
+};
+
+
+cloudeebus.Future.some = function() {
+	var future = new cloudeebus.Future();
+	var resolver = future.resolver;
+	var index = 0;
+	var countdown = arguments.length;
+	var args = new Array(countdown);
+	var acceptCallback = function(arg) {
+		resolver.resolve(arg, true);
+	};
+	if (arguments.length == 0)
+		resolver.resolve(undefined, true);
+	else
+		for (i in arguments) {
+			var rejectCallback = function(arg) {
+				args[index] = arg;
+				countdown--;
+				if (countdown == 0)
+					resolver.reject(args, true);
+			};
+			index++;
+			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+		}
+	
+	return future;
+};
+
+
+
+/*****************************************************************************/
+
 cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.wampSession = session; 
 	this.busConnection = busConnection; 
@@ -432,8 +874,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
 			self.propInterfaces = null;
@@ -458,17 +899,20 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			while (ifChild) {
 				if (ifChild.nodeName == "method") {
 					var nArgs = 0;
+					var signature = "";
 					var metChild = ifChild.firstChild;
 					while (metChild) {
 						if (metChild.nodeName == "arg" &&
-							metChild.attributes.getNamedItem("direction").value == "in")
+							metChild.attributes.getNamedItem("direction").value == "in") {
+								signature += metChild.attributes.getNamedItem("type").value;
 								nArgs++;
+						}
 						metChild = metChild.nextSibling;
 					}
 					var metName = ifChild.attributes.getNamedItem("name").value;
 					if (!self[metName])
-						self._addMethod(ifName, metName, nArgs);
-					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs);
+						self._addMethod(ifName, metName, nArgs, signature);
+					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs, signature);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -481,8 +925,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}
 		else {
@@ -493,66 +936,58 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	}
 
 	// call Introspect on self
-	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
+	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", []).then(introspectSuccessCB, errorCB);
 };
 
 
-cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
 
 	var self = this;
 	
 	self[method] = function() {
-		if (arguments.length < nArgs || arguments.length > nArgs + 2)
-			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
 		var args = [];
-		var successCB = null;
-		var errorCB = null;
 		for (var i=0; i < nArgs; i++ )
 			args.push(arguments[i]);
-		if (arguments.length > nArgs)
-			successCB = arguments[nArgs];
-		if (arguments.length > nArgs + 1)
-			errorCB = arguments[nArgs + 1];
-		self.callMethod(ifName, method, args, successCB, errorCB);
-	};
-	
+		return self.callMethod(ifName, method, args, signature);
+	};	
 };
 
 
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
 	
-	var self = this; 
-
-	function callMethodSuccessCB(str) {
-		if (successCB) {
+	var self = this;
+	
+	var future = new cloudeebus.Future(function (resolver) {
+		function callMethodSuccessCB(str) {
 			try { // calling dbus hook object function for un-translated types
-				successCB.apply(self, eval(str));
+				var result = eval(str);
+				resolver.accept(result[0], true);
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
-				if (errorCB)
-					errorCB(e);
+				resolver.reject(e, true);
 			}
 		}
-	}
 
-	function callMethodErrorCB(error) {
-		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
-		if (errorCB)
-			errorCB(error.desc);
-	}
+		function callMethodErrorCB(error) {
+			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
+			resolver.reject(error.desc, true);
+		}
 
-	var arglist = [
-		self.busConnection.name,
-		self.busName,
-		self.objectPath,
-		ifName,
-		method,
-		JSON.stringify(args)
-	];
+		var arglist = [
+			self.busConnection.name,
+			self.busName,
+			self.objectPath,
+			ifName,
+			method,
+			JSON.stringify(args)
+		];
 
-	// call dbusSend with bus type, destination, object, message and arguments
-	self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+		// call dbusSend with bus type, destination, object, message and arguments
+		self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+	});
+	
+	return future;
 };
 
 

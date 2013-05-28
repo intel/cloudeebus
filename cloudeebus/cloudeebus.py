@@ -36,6 +36,8 @@ from autobahn.wamp import exportRpc, WampServerFactory, WampCraServerProtocol
 from dbus.mainloop.glib import DBusGMainLoop
 
 import gobject
+import re
+import dbus.service
 gobject.threads_init()
 
 from dbus import glib
@@ -44,11 +46,12 @@ glib.init_threads()
 # enable debug log
 from twisted.python import log
 
-
+# XML parser module
+from xml.etree.ElementTree import XMLParser
 
 ###############################################################################
 
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
@@ -176,6 +179,249 @@ class DbusCallHandler:
 
 
 
+################################################################################       
+class ExecCode:
+    '''
+    Execute DynDBusClass generated code
+    '''
+    def __init__(self, globalCtx, localCtx) :
+        self.exec_string = ""
+        self.exec_code = None
+        self.exec_code_valid = 1
+        self.indent_level = 0
+        self.indent_increment = 1
+        self.line = 0
+        self.localCtx = localCtx
+        self.globalCtx = globalCtx
+        
+
+    def append_stmt(self, stmt) :
+        self.exec_code_valid = 0
+        self.line += 1
+        for x in range(0,self.indent_level):
+            self.exec_string = self.exec_string + ' '            
+        self.exec_string = self.exec_string + stmt + '\n'
+
+    def indent(self) :
+        self.indent_level = self.indent_level + self.indent_increment
+
+    def dedent(self) :
+        self.indent_level = self.indent_level - self.indent_increment
+    
+    # compile : Compile exec_string into exec_code using the builtin
+    # compile function. Skip if already in sync.
+    def compile(self) :
+        if not self.exec_code_valid :
+            self.exec_code = compile(self.exec_string, "<string>", "exec")
+        self.exec_code_valid = True
+
+    def execute(self) :
+        if not self.exec_code_valid :
+            self.compile()
+        exec(self.exec_code, self.globalCtx, self.localCtx)
+
+
+
+################################################################################       
+class XmlCbParser: # The target object of the parser
+    maxDepth = 0
+    depth = 0
+    def __init__(self, dynDBusClass):
+        self.dynDBusClass = dynDBusClass
+        
+    def start(self, tag, attrib):   # Called for each opening tag.
+        if (tag == 'node'):
+            return
+        # Set interface name
+        if (tag == 'interface'):
+            self.dynDBusClass.set_interface(attrib['name'])
+            return
+        # Set method name
+        if (tag == 'method'):
+            self.current = tag
+            self.dynDBusClass.def_method(attrib['name'])
+            return
+        if (tag == 'signal'):
+            self.current = tag
+            self.dynDBusClass.def_signal(attrib['name'])
+            return
+
+        # Set signature (in/out & name) for method
+        if (tag == 'arg'):
+            if (self.current == 'method'):
+                if (attrib.has_key('direction') == False):
+                    attrib['direction'] = "in"
+                self.dynDBusClass.add_signature(attrib['name'],
+                                                attrib['direction'],
+                                                attrib['type'])
+                return
+            if (self.current == 'signal'):
+                if (attrib.has_key('name') == False):
+                    attrib['name'] = 'value'
+                self.dynDBusClass.add_signature(attrib['name'], 'in',
+                                                attrib['type'])
+                return
+    def end(self, tag):             # Called for each closing tag.
+        if (tag == 'method'):
+            self.dynDBusClass.add_dbus_method()
+            self.dynDBusClass.add_body_method()
+            self.dynDBusClass.end_method()
+        if (tag == 'signal'):
+            self.dynDBusClass.add_dbus_signal()
+            self.dynDBusClass.add_body_signal()
+            self.dynDBusClass.end_method()
+           
+    def data(self, data):
+        pass            # We do not need to do anything with data.
+    def close(self):    # Called when all data has been parsed.
+        return self.maxDepth
+
+
+       
+################################################################################       
+class DynDBusClass():
+    def __init__(self, className, globalCtx, localCtx):
+        self.className = className
+        self.xmlCB = XmlCbParser(self)
+        self.signature = {}
+        self.class_code = ExecCode(globalCtx, localCtx)  
+        self.class_code.indent_increment = 4
+        self.class_code.append_stmt("import dbus")
+        self.class_code.append_stmt("\n")
+        self.class_code.append_stmt("class " + self.className + "(dbus.service.Object):")
+        self.class_code.indent()
+        
+        ## Overload of __init__ method 
+        self.def_method("__init__")
+        self.add_method("bus, callback=None, objPath='/sample', busName='org.cloudeebus'")
+        self.add_stmt("self.bus = bus")
+        self.add_stmt("self.objPath = objPath")
+        self.add_stmt("self.callback = callback")        
+        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, bus_name=busName)")
+        self.end_method()
+               
+        ## Create 'add_to_connection' method 
+        self.def_method("add_to_connection")
+        self.add_method("connection=None, path=None")
+        self.add_stmt("dbus.service.Object.add_to_connection(self, connection=self.bus, path=self.objPath)")
+        self.end_method()
+               
+        ## Create 'remove_from_connection' method 
+        self.def_method("remove_from_connection")
+        self.add_method("connection=None, path=None")
+        self.add_stmt("dbus.service.Object.remove_from_connection(self, connection=None, path=self.objPath)")
+        self.end_method()
+               
+    def createDBusServiceFromXML(self, xml):
+        self.parser = XMLParser(target=self.xmlCB)
+        self.parser.feed(xml)
+        self.parser.close()
+    
+    def set_interface(self, ifName):
+        self.ifName = ifName
+        
+    def def_method(self, methodName):
+        self.methodToAdd = methodName
+        self.signalToAdd = None
+        self.args_str = str()
+        self.signature = {}
+        self.signature['name'] = str()
+        self.signature['in'] = str()                
+        self.signature['out'] = str()                        
+
+    def def_signal(self, signalName):
+        self.methodToAdd = None
+        self.signalToAdd = signalName
+        self.args_str = str()
+        self.signature = {}
+        self.signature['name'] = str()
+        self.signature['in'] = str()                
+        self.signature['out'] = str()                        
+
+    def add_signature(self, name, direction, signature):
+        if (direction == 'in'):
+            self.signature['in'] += signature
+            if (self.signature['name'] != str()):
+                self.signature['name'] += ", "
+            self.signature['name'] += name
+        if (direction == 'out'):
+            self.signature['out'] = signature                        
+        
+    def add_method(self, args = None, async_success_cb = None, async_err_cb = None):
+        async_cb_str = str()
+        if (self.methodToAdd != None):
+            name = self.methodToAdd
+        else:
+            name = self.signalToAdd
+        if (args != None):
+            self.args_str = args
+        if (async_success_cb != None):
+            async_cb_str = async_success_cb
+        if (async_err_cb != None):
+            if (async_cb_str != str()):
+                async_cb_str += ", "
+            async_cb_str += async_err_cb
+                        
+        parameters = self.args_str
+        if (async_cb_str != str()):
+            if (parameters != str()):
+                parameters += ", "
+            parameters +=async_cb_str       
+        
+        if (parameters != str()):
+            self.class_code.append_stmt("def " + name + "(self, %s):" % parameters)               
+        else:
+            self.class_code.append_stmt("def " + name + "(self):")
+        self.class_code.indent()
+        
+    def end_method(self):
+        self.class_code.append_stmt("\n")
+        self.class_code.dedent()
+        
+    def add_dbus_method(self):
+        decorator = '@dbus.service.method("' + self.ifName + '"'
+        if (self.signature.has_key('in') and self.signature['in'] != str()):
+                decorator += ", in_signature='" + self.signature['in'] + "'"
+        if (self.signature.has_key('out') and self.signature['out'] != str()):
+                decorator += ", out_signature='" + self.signature['out'] + "'"
+        decorator += ", async_callbacks=('dbus_async_cb', 'dbus_async_err_cb')"            
+        decorator += ")"
+        self.class_code.append_stmt(decorator)
+        if (self.signature.has_key('name') and self.signature['name'] != str()):
+            self.add_method(self.signature['name'], async_success_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+        else:
+            self.add_method(async_success_cb='dbus_async_cb', async_err_cb='dbus_async_err_cb')
+
+    def add_dbus_signal(self):
+        decorator = '@dbus.service.signal("' + self.ifName + '"'
+        if (self.signature.has_key('in') and self.signature['in'] != str()):
+                decorator += ", signature='" + self.signature['in'] + "'"
+        decorator += ")"            
+        self.class_code.append_stmt(decorator)
+        if (self.signature.has_key('name') and self.signature['name'] != str()):
+            self.add_method(self.signature['name'])
+        else:
+            self.add_method()
+
+    def add_body_method(self):
+        if (self.methodToAdd != None):
+            if (self.args_str != str()):
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
+            else:        
+                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb)")
+
+    def add_body_signal(self):
+        self.class_code.append_stmt("return") ## TODO: Remove and fix with code ad hoc
+        self.class_code.append_stmt("\n")
+
+    def add_stmt(self, stmt) :
+        self.class_code.append_stmt(stmt)
+        
+    def declare(self) :
+        self.class_code.execute()
+
+
+
 ###############################################################################
 class CloudeebusService:
     '''
@@ -188,6 +434,12 @@ class CloudeebusService:
         self.proxyObjects = {}
         self.proxyMethods = {}
         self.pendingCalls = []
+        self.dynDBusClasses = {} # DBus class source code generated dynamically (a list because one by classname)
+        self.services = {}  # DBus service created
+        self.serviceAgents = {} # Instantiated DBus class previously generated dynamically, for now, one by classname
+        self.servicePendingCalls = {} # JS methods called (and waiting for a Success/error response), containing 'methodId', (successCB, errorCB)
+        self.localCtx = locals()
+        self.globalCtx = globals()
 
 
     def proxyObject(self, busName, serviceName, objectName):
@@ -266,6 +518,124 @@ class CloudeebusService:
         return dbusCallHandler.callMethod()
 
 
+    @exportRpc
+    def emitSignal(self, list):
+        '''
+        arguments: agentObjectPath, signalName, result (to emit)
+        '''
+        objectPath = list[0]
+        className = re.sub('/', '_', objectPath[1:])
+        signalName = list[1]
+        result = list[2]
+        if (self.serviceAgents.has_key(className) == True):
+            exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "(" + str(result) + ")"
+            eval(exe_str, self.globalCtx, self.localCtx)
+        else:
+            raise Exception("No object path " + objectPath)
+
+    @exportRpc
+    def returnMethod(self, list):
+        '''
+        arguments: methodId, callIndex, success (=true, error otherwise), result (to return)
+        '''
+        methodId = list[0]
+        callIndex = list[1]
+        success = list[2]
+        result = list[3]
+        if (self.servicePendingCalls.has_key(methodId)):
+            cb = self.servicePendingCalls[methodId]['calls'][callIndex]
+            if cb is None:
+                raise Exception("No pending call " + str(callIndex) + " for methodID " + methodId)
+            if (success):                
+                successCB = cb["successCB"]
+                if (result != None):
+                    successCB(result)
+                else:
+                    successCB()                    
+            else:     
+                errorCB = cb["errorCB"]        
+                if (result != None):
+                    errorCB(result)
+                else:
+                    errorCB()
+            self.servicePendingCalls[methodId]['calls'][callIndex] = None
+            self.servicePendingCalls[methodId]['count'] = self.servicePendingCalls[methodId]['count'] - 1
+            if self.servicePendingCalls[methodId]['count'] == 0:
+                del self.servicePendingCalls[methodId]
+        else:
+            raise Exception("No methodID " + methodId)
+
+    def srvCB(self, name, objPath, ifName, async_succes_cb, async_error_cb, *args):
+        methodId = self.srvName + "#" + objPath + "#" + ifName + "#" + name
+        cb = { 'successCB': async_succes_cb, 
+               'errorCB': async_error_cb}
+        if methodId not in self.servicePendingCalls:
+            self.servicePendingCalls[methodId] = {'count': 0, 'calls': []}
+        pendingCallStr = json.dumps({'callIndex': len(self.servicePendingCalls[methodId]['calls']), 'args': args})
+        self.servicePendingCalls[methodId]['calls'].append(cb)
+        self.servicePendingCalls[methodId]['count'] = self.servicePendingCalls[methodId]['count'] + 1
+        factory.dispatch(methodId, pendingCallStr)
+                    
+    @exportRpc
+    def serviceAdd(self, list):
+        '''
+        arguments: busName, srvName
+        '''
+        busName = list[0]
+        self.bus =  cache.dbusConnexion( busName['name'] )
+        self.srvName = list[1]
+        if (self.services.has_key(self.srvName) == False):            
+            self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
+        return self.srvName
+
+    @exportRpc
+    def serviceRelease(self, list):
+        '''
+        arguments: busName, srvName
+        '''
+        self.srvName = list[0]
+        if (self.services.has_key(self.srvName) == True):
+            self.services.pop(self.srvName)
+            return self.srvName
+        else:
+            raise Exception(self.srvName + " do not exist")
+                   
+    @exportRpc
+    def serviceAddAgent(self, list):
+        '''
+        arguments: objectPath, xmlTemplate
+        '''
+        self.agentObjectPath = list[0]
+        xmlTemplate = list[1]
+        self.className = re.sub('/', '_', self.agentObjectPath[1:])
+        if (self.dynDBusClasses.has_key(self.className) == False):
+            self.dynDBusClasses[self.className] = DynDBusClass(self.className, self.globalCtx, self.localCtx)
+            self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
+            self.dynDBusClasses[self.className].declare()
+
+        ## Class already exist, instanciate it if not already instanciated
+        if (self.serviceAgents.has_key(self.className) == False):
+            self.serviceAgents[self.className] = eval(self.className + "(self.bus, callback=self.srvCB, objPath=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
+            
+        self.serviceAgents[self.className].add_to_connection()
+        return (self.agentObjectPath)
+                    
+    @exportRpc
+    def serviceDelAgent(self, list):
+        '''
+        arguments: objectPath, xmlTemplate
+        '''
+        agentObjectPath = list[0]
+        className = re.sub('/', '_', agentObjectPath[1:])
+
+        if (self.serviceAgents.has_key(className)):
+            self.serviceAgents[self.className].remove_from_connection()
+            self.serviceAgents.pop(self.className)
+        else:
+            raise Exception(agentObjectPath + " doesn't exist!")
+        
+        return (agentObjectPath)
+                    
     @exportRpc
     def getVersion(self):
         '''

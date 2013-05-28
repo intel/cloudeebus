@@ -24,7 +24,7 @@
 from setuptools import setup
 
 setup(name = "cloudeebus",
-	version = "0.3.2",
+	version = "0.4.0",
 	description = "Javascript-DBus bridge",
 	author = "Luc Yriarte, Christophe Guiraud, Frederic Paut",
 	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com, frederic.paut@intel.com",
@@ -32,7 +32,8 @@ setup(name = "cloudeebus",
 	license = "http://www.apache.org/licenses/LICENSE-2.0",
 	scripts = ["cloudeebus/cloudeebus.py"],
 	packages = ["cloudeebus"],
-	data_files = [("cloudeebus" ,["AUTHORS", "README.md", "LICENSE"])],
+	data_files = [("cloudeebus" ,["AUTHORS", "README.md", "LICENSE"]),
+				 ('/etc/dbus-1/system.d/', ['org.cloudeebus.conf'])],
 	platforms = ("Any"),
 	install_requires = ["setuptools", "autobahn>=0.5.8"],
 	classifiers = ["License :: OSI Approved :: Apache Software License",

@@ -10,12 +10,6 @@ Proxy object properties:
 - support cloning proxies so that introspection is called only once per object type.
 
 
-API style:
-----------
-- use "Promises" pattern for asynchronous APIs 
-- force JSON description of numbers as floats when needed 
-
-
 DBus service support:
 ---------------------
 - support publishing a DBus service

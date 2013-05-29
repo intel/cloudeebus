@@ -29,7 +29,7 @@ var dbus = { // hook object for dbus types not translated by python-json
 /*****************************************************************************/
 
 var cloudeebus = window.cloudeebus = {
-		version: "0.3.2",
+		version: "0.4.0",
 		minVersion: "0.3.2"
 };
 
@@ -151,6 +151,26 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 
 /*****************************************************************************/
 
+cloudeebus.Request = function(proxy, onsuccess, onerror) {
+	this.proxy = proxy; 
+	this.readyState = "pending";
+	this.error = null;
+	this.result = null;
+	this.onsuccess = onsuccess;
+	this.onerror = onerror;
+    return this;
+};
+
+cloudeebus.Request.prototype.then = function(onsuccess, onerror) {
+	this.onsuccess = onsuccess;
+	this.onerror = onerror;
+	return this;
+};
+
+
+
+/*****************************************************************************/
+
 cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.wampSession = session; 
 	this.busConnection = busConnection; 
@@ -182,8 +202,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (self.propInterfaces.length > 0) 
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		else {
 			self.propInterfaces = null;
@@ -208,17 +227,20 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 			while (ifChild) {
 				if (ifChild.nodeName == "method") {
 					var nArgs = 0;
+					var signature = "";
 					var metChild = ifChild.firstChild;
 					while (metChild) {
 						if (metChild.nodeName == "arg" &&
-							metChild.attributes.getNamedItem("direction").value == "in")
+							metChild.attributes.getNamedItem("direction").value == "in") {
+								signature += metChild.attributes.getNamedItem("type").value;
 								nArgs++;
+						}
 						metChild = metChild.nextSibling;
 					}
 					var metName = ifChild.attributes.getNamedItem("name").value;
 					if (!self[metName])
-						self._addMethod(ifName, metName, nArgs);
-					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs);
+						self._addMethod(ifName, metName, nArgs, signature);
+					self.interfaceProxies[ifName]._addMethod(ifName, metName, nArgs, signature);
 				}
 				else if (ifChild.nodeName == "property") {
 					if (!hasProperties)
@@ -231,8 +253,7 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		if (supportDBusProperties && self.propInterfaces.length > 0) {
 			self.callMethod("org.freedesktop.DBus.Properties", 
 				"GetAll", 
-				[self.propInterfaces[self.propInterfaces.length-1]], 
-				getAllPropertiesSuccessCB, 
+				[self.propInterfaces[self.propInterfaces.length-1]]).then(getAllPropertiesSuccessCB, 
 				errorCB ? errorCB : getAllPropertiesNextInterfaceCB);
 		}
 		else {
@@ -243,53 +264,49 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	}
 
 	// call Introspect on self
-	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", [], introspectSuccessCB, errorCB);
+	self.callMethod("org.freedesktop.DBus.Introspectable", "Introspect", []).then(introspectSuccessCB, errorCB);
 };
 
 
-cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs) {
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
 
 	var self = this;
 	
 	self[method] = function() {
-		if (arguments.length < nArgs || arguments.length > nArgs + 2)
-			throw "Error: method " + method + " takes " + nArgs + " parameters, got " + arguments.length + ".";
 		var args = [];
-		var successCB = null;
-		var errorCB = null;
 		for (var i=0; i < nArgs; i++ )
 			args.push(arguments[i]);
-		if (arguments.length > nArgs)
-			successCB = arguments[nArgs];
-		if (arguments.length > nArgs + 1)
-			errorCB = arguments[nArgs + 1];
-		self.callMethod(ifName, method, args, successCB, errorCB);
-	};
-	
+		return self.callMethod(ifName, method, args, signature);
+	};	
 };
 
-
-cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, successCB, errorCB) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
 	
-	var self = this; 
-
+	var self = this;
+	var request = new cloudeebus.Request(this);
+	
 	function callMethodSuccessCB(str) {
-		if (successCB) {
-			try { // calling dbus hook object function for un-translated types
-				successCB.apply(self, eval(str));
-			}
-			catch (e) {
-				cloudeebus.log("Method callback exception: " + e);
-				if (errorCB)
-					errorCB(e);
-			}
+		request.readyState = "done";
+		try { // calling dbus hook object function for un-translated types
+			var result = eval(str);
+			request.result = result[0];
+			if (request.onsuccess)
+				request.onsuccess.apply(request, result);
+		}
+		catch (e) {
+			cloudeebus.log("Method callback exception: " + e);
+			request.error = e;
+			if (request.onerror)
+				request.onerror.apply(request, [request.error]);
 		}
 	}
 
 	function callMethodErrorCB(error) {
 		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
-		if (errorCB)
-			errorCB(error.desc);
+		request.readyState = "done";
+		request.error = error.desc;
+		if (request.onerror)
+			request.onerror.apply(request, [request.error]);
 	}
 
 	var arglist = [
@@ -303,6 +320,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, suc
 
 	// call dbusSend with bus type, destination, object, message and arguments
 	self.wampSession.call("dbusSend", arglist).then(callMethodSuccessCB, callMethodErrorCB);
+	return request;
 };
 
 

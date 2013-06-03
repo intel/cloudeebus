@@ -561,14 +561,14 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 };
 
 
-cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
+cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, handlerCB, errorCB) {
 	
 	var self = this; 
 
 	function signalHandler(id, data) {
-		if (successCB) {
+		if (handlerCB) {
 			try { // calling dbus hook object function for un-translated types
-				successCB.apply(self, eval(data));
+				handlerCB.apply(self, eval(data));
 			}
 			catch (e) {
 				cloudeebus.log("Signal handler exception: " + e);

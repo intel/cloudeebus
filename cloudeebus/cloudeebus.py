@@ -571,7 +571,13 @@ class CloudeebusService:
                'errorCB': async_error_cb}
         if methodId not in self.servicePendingCalls:
             self.servicePendingCalls[methodId] = {'count': 0, 'calls': []}
-        pendingCallStr = json.dumps({'callIndex': len(self.servicePendingCalls[methodId]['calls']), 'args': args})
+            
+        try:
+            pendingCallStr = json.dumps({'callIndex': len(self.servicePendingCalls[methodId]['calls']), 'args': args})
+        except Exception, e:                
+            args = eval( str(args).replace("dbus.Byte", "dbus.Int16") )
+            pendingCallStr = json.dumps({'callIndex': len(self.servicePendingCalls[methodId]['calls']), 'args': args})
+               
         self.servicePendingCalls[methodId]['calls'].append(cb)
         self.servicePendingCalls[methodId]['count'] = self.servicePendingCalls[methodId]['count'] + 1
         factory.dispatch(methodId, pendingCallStr)

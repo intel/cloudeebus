@@ -21,31 +21,40 @@
 var dbus = require('node-dbus');
 var DOMParser = require('xmldom').DOMParser;
 
-dbus.log = function(msg) {
+
+
+/*****************************************************************************/
+
+var cloudeebus = dbus;
+cloudeebus.version = "0.4.0";
+exports.dbus = dbus;
+exports.cloudeebus = cloudeebus;
+
+cloudeebus.log = function(msg) {
 	console.log(msg);
 };
 
-dbus.BusConnection = function(name) {
+cloudeebus.BusConnection = function(name) {
 	this.name = name;
 	if (this.name == "Session")
-		this.bus = dbus.DBUS_BUS_SESSION;
+		this.bus = cloudeebus.DBUS_BUS_SESSION;
 	else if (this.name == "System")
-		this.bus = dbus.DBUS_BUS_SYSTEM;
+		this.bus = cloudeebus.DBUS_BUS_SYSTEM;
 	return this;
 };
 
-dbus.SessionBus = function() {
-	return new dbus.BusConnection("Session");
+cloudeebus.SessionBus = function() {
+	return new cloudeebus.BusConnection("Session");
 };
 
-dbus.SystemBus = function() {
-	return new dbus.BusConnection("System");
+cloudeebus.SystemBus = function() {
+	return new cloudeebus.BusConnection("System");
 	return this;
 };
 
 
-dbus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
-	var proxy = new dbus.ProxyObject(this, busName, objectPath);
+cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, introspectCB, errorCB) {
+	var proxy = new cloudeebus.ProxyObject(this, busName, objectPath);
 	if (introspectCB)
 		proxy._introspect(introspectCB, errorCB);
 	return proxy;
@@ -55,8 +64,9 @@ dbus.BusConnection.prototype.getObject = function(busName, objectPath, introspec
 
 /*****************************************************************************/
 
-dbus.Request = function(proxy, onsuccess, onerror) {
+cloudeebus.Request = function(proxy, onsuccess, onerror) {
 	this.proxy = proxy; 
+	this.readyState = "pending";
 	this.error = null;
 	this.result = null;
 	this.onsuccess = onsuccess;
@@ -64,7 +74,7 @@ dbus.Request = function(proxy, onsuccess, onerror) {
     return this;
 };
 
-dbus.Request.prototype.then = function(onsuccess, onerror) {
+cloudeebus.Request.prototype.then = function(onsuccess, onerror) {
 	this.onsuccess = onsuccess;
 	this.onerror = onerror;
 	return this;
@@ -74,7 +84,7 @@ dbus.Request.prototype.then = function(onsuccess, onerror) {
 
 /*****************************************************************************/
 
-dbus.ProxyObject = function(busConnection, busName, objectPath) {
+cloudeebus.ProxyObject = function(busConnection, busName, objectPath) {
 	this.busConnection = busConnection; 
 	this.busName = busName; 
 	this.objectPath = objectPath; 
@@ -84,12 +94,12 @@ dbus.ProxyObject = function(busConnection, busName, objectPath) {
 };
 
 
-dbus.ProxyObject.prototype.getInterface = function(ifName) {
+cloudeebus.ProxyObject.prototype.getInterface = function(ifName) {
 	return this.interfaceProxies[ifName];
 };
 
 
-dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
+cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	
 	var self = this; 
 
@@ -122,7 +132,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		var supportDBusProperties = false;
 		for (var i=0; i < interfaces.length; i++) {
 			var ifName = interfaces[i].attributes.getNamedItem("name").value;
-			self.interfaceProxies[ifName] = new dbus.ProxyObject(self.busConnection, self.busName, self.objectPath);
+			self.interfaceProxies[ifName] = new cloudeebus.ProxyObject(self.busConnection, self.busName, self.objectPath);
 			if (ifName == "org.freedesktop.DBus.Properties")
 				supportDBusProperties = true;
 			var hasProperties = false;
@@ -171,7 +181,7 @@ dbus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 };
 
 
-dbus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
+cloudeebus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signature) {
 
 	var self = this;
 	
@@ -183,42 +193,42 @@ dbus.ProxyObject.prototype._addMethod = function(ifName, method, nArgs, signatur
 	};	
 };
 
-
-dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
+cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature) {
 	
-	var self = this; 
-	var request = new dbus.Request(this);
+	var self = this;
+	var request = new cloudeebus.Request(this);
 	
-
 	function callMethodSuccessCB() {
+		request.readyState = "done";
 		request.result = arguments;
 		if (request.onsuccess) {
 			try {
 				request.onsuccess.apply(request, request.result);
 			}
 			catch (e) {
-				dbus.log("Method callback exception: " + e);
+				cloudeebus.log("Method callback exception: " + e);
 				request.error = e;
 				if (request.onerror)
-					request.onerror.apply(request, e);
+					request.onerror.apply(request, [request.error]);
 			}
 		}
 	}
 
 	function callMethodErrorCB(error) {
-		dbus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.message);
+		cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.message);
+		request.readyState = "done";
 		request.error = error.desc;
 		if (request.onerror)
-			request.onerror.apply(request, request.error);
+			request.onerror.apply(request, [request.error]);
 	}
 
-	var dbusMsg = Object.create(dbus.DBusMessage, {
+	var dbusMsg = Object.create(cloudeebus.DBusMessage, {
 		destination: {value: self.busName},
 		path: {value: self.objectPath},
 		iface: {value: ifName},
 		member: {value: method},
 		bus: {value: self.busConnection.bus},
-		type: {value: dbus.DBUS_MESSAGE_TYPE_METHOD_RETURN}
+		type: {value: cloudeebus.DBUS_MESSAGE_TYPE_METHOD_RETURN}
 	});
 
 	if (args.length) {
@@ -234,7 +244,7 @@ dbus.ProxyObject.prototype.callMethod = function(ifName, method, args, signature
 };
 
 
-dbus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
+cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB, errorCB) {
 	
 	var self = this; 
 
@@ -248,7 +258,7 @@ dbus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB,
 				successCB.apply(self, args);
 			}
 			catch (e) {
-				dbus.log("Signal handler exception: " + e);
+				cloudeebus.log("Signal handler exception: " + e);
 				if (errorCB)
 					errorCB(e);
 			}
@@ -256,17 +266,17 @@ dbus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB,
 	}
 	
 	function connectToSignalErrorCB(error) {
-		dbus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + error.message);
+		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + error.message);
 		if (errorCB)
 			errorCB(error.message);
 	}
 
-	var dbusSignalHandler = Object.create(dbus.DBusMessage, {
+	var dbusSignalHandler = Object.create(cloudeebus.DBusMessage, {
 		path: {value: self.objectPath},
 		iface: {value: ifName},
 		member: {value: signal},
 		bus: {value: self.busConnection.bus},
-		type: {value: dbus.DBUS_MESSAGE_TYPE_SIGNAL}
+		type: {value: cloudeebus.DBUS_MESSAGE_TYPE_SIGNAL}
 	});
 
 	this.handlers[ifName + "#" + signal] = dbusSignalHandler;
@@ -278,6 +288,6 @@ dbus.ProxyObject.prototype.connectToSignal = function(ifName, signal, successCB,
 };
 
 
-dbus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
+cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
 	this.handlers[ifName + "#" + signal].removeMatch();
 };

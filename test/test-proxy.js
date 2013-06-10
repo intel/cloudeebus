@@ -20,10 +20,9 @@
 
 /*****************************************************************************/
 
-var dbus = require('node-dbus');
-var dbusProxy = require('../cloudeebus/cloudeebus.js');
+var cloudeebus = require('../cloudeebus/cloudeebus.js').cloudeebus;
 
-
+console.log("cloudeebus.version:" + cloudeebus.version);
 /*****************************************************************************/
 
 //Wait for async reply before exiting
@@ -69,8 +68,8 @@ function gotScreenSaverProxy(proxy) {
 	proxy.connectToSignal("org.gnome.ScreenSaver", "ActiveChanged", notifCB, errorCB);
 }
 
-dbus.SessionBus().getObject("org.freedesktop.DBus", "/org/freedesktop/DBus", gotBusProxy, errorCB);
-dbus.SessionBus().getObject("org.freedesktop.Notifications", "/org/freedesktop/Notifications", gotNotifProxy, errorCB);
+cloudeebus.SessionBus().getObject("org.freedesktop.DBus", "/org/freedesktop/DBus", gotBusProxy, errorCB);
+cloudeebus.SessionBus().getObject("org.freedesktop.Notifications", "/org/freedesktop/Notifications", gotNotifProxy, errorCB);
 
-dbus.SessionBus().getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver", gotScreenSaverProxy, errorCB);
+cloudeebus.SessionBus().getObject("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver", gotScreenSaverProxy, errorCB);
 

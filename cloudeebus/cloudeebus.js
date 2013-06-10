@@ -26,7 +26,7 @@ var DOMParser = require('xmldom').DOMParser;
 /*****************************************************************************/
 
 var cloudeebus = dbus;
-cloudeebus.version = "0.4.0";
+cloudeebus.version = "0.5.0";
 exports.dbus = dbus;
 exports.cloudeebus = cloudeebus;
 

@@ -452,8 +452,8 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 		}
 
 		function callMethodErrorCB(error) {
-			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.desc);
-			resolver.reject(error.desc, true);
+			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + error.message);
+			resolver.reject(error.message, true);
 		}
 
 		var dbusMsg = Object.create(cloudeebus.DBusMessage, {

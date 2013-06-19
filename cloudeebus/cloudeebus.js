@@ -26,7 +26,7 @@ var DOMParser = require('xmldom').DOMParser;
 /*****************************************************************************/
 
 var cloudeebus = dbus;
-cloudeebus.version = "0.5.0";
+cloudeebus.version = "0.5.1";
 exports.dbus = dbus;
 exports.cloudeebus = cloudeebus;
 
@@ -83,79 +83,79 @@ function _processWrappersAsync(wrappers, value) {
 
 /*****************************************************************************/
 
-cloudeebus.FutureResolver = function(future) {
-	this.future = future;
+cloudeebus.PromiseResolver = function(promise) {
+	this.promise = promise;
 	this.resolved = null;
     return this;
 };
 
 
-cloudeebus.FutureResolver.prototype.resolve = function(value, sync) {
+cloudeebus.PromiseResolver.prototype.resolve = function(value, sync) {
 	if (this.resolved)
 		return;
 	
 	var then = (value && value.then && value.then.apply) ? value.then : null;
 	if (then) {
 		var self = this;		
-		var acceptCallback = function(arg) {
+		var fulfillCallback = function(arg) {
 			self.resolve(arg, true);
 		};	
 		var rejectCallback = function(arg) {
 			self.reject(arg, true);
 		};
 		try {
-			then.apply(value, [acceptCallback, rejectCallback]);
+			then.apply(value, [fulfillCallback, rejectCallback]);
 		}
 		catch (e) {
 			this.reject(e, true);
 		}
 	}
 	
-	this.accept(value, sync);
+	this.fulfill(value, sync);
 };
 
 
-cloudeebus.FutureResolver.prototype.accept = function(value, sync) {
+cloudeebus.PromiseResolver.prototype.fulfill = function(value, sync) {
 	if (this.resolved)
 		return;
 	
-	var future = this.future;
-	future.state = "accepted";
-	future.result = value;
+	var promise = this.promise;
+	promise.state = "fulfilled";
+	promise.result = value;
 	
 	this.resolved = true;
 	if (sync)
-		_processWrappers(future._acceptWrappers, value);
+		_processWrappers(promise._fulfillWrappers, value);
 	else
-		_processWrappersAsync(future._acceptWrappers, value);
+		_processWrappersAsync(promise._fulfillWrappers, value);
 };
 
 
-cloudeebus.FutureResolver.prototype.reject = function(value, sync) {
+cloudeebus.PromiseResolver.prototype.reject = function(value, sync) {
 	if (this.resolved)
 		return;
 	
-	var future = this.future;
-	future.state = "rejected";
-	future.result = value;
+	var promise = this.promise;
+	promise.state = "rejected";
+	promise.result = value;
 	
 	this.resolved = true;
 	if (sync)
-		_processWrappers(future._rejectWrappers, value);
+		_processWrappers(promise._rejectWrappers, value);
 	else
-		_processWrappersAsync(future._rejectWrappers, value);
+		_processWrappersAsync(promise._rejectWrappers, value);
 };
 
 
 
 /*****************************************************************************/
 
-cloudeebus.Future = function(init) {
+cloudeebus.Promise = function(init) {
 	this.state = "pending";
 	this.result = null;
-	this._acceptWrappers = [];
+	this._fulfillWrappers = [];
 	this._rejectWrappers = [];
-	this.resolver = new cloudeebus.FutureResolver(this);
+	this.resolver = new cloudeebus.PromiseResolver(this);
 	if (init) {
 		try {
 			init.apply(this, [this.resolver]);
@@ -168,27 +168,27 @@ cloudeebus.Future = function(init) {
 };
 
 
-cloudeebus.Future.prototype.appendWrappers = function(acceptWrapper, rejectWrapper) {
-	if (acceptWrapper)
-		this._acceptWrappers.push(acceptWrapper);
+cloudeebus.Promise.prototype.appendWrappers = function(fulfillWrapper, rejectWrapper) {
+	if (fulfillWrapper)
+		this._fulfillWrappers.push(fulfillWrapper);
 	if (rejectWrapper)
 		this._rejectWrappers.push(rejectWrapper);
-	if (this.state == "accepted")
-		_processWrappersAsync(this._acceptWrappers, this.result);
+	if (this.state == "fulfilled")
+		_processWrappersAsync(this._fulfillWrappers, this.result);
 	if (this.state == "rejected")
 		_processWrappersAsync(this._rejectWrappers, this.result);
 };
 
 
-cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
-	var future = new cloudeebus.Future();
-	var resolver = future.resolver;
-	var acceptWrapper, rejectWrapper;
+cloudeebus.Promise.prototype.then = function(fulfillCB, rejectCB) {
+	var promise = new cloudeebus.Promise();
+	var resolver = promise.resolver;
+	var fulfillWrapper, rejectWrapper;
 	
-	if (acceptCB)
-		acceptWrapper = function(arg) {
+	if (fulfillCB)
+		fulfillWrapper = function(arg) {
 			try {
-				var value = acceptCB.apply(future, [arg]);
+				var value = fulfillCB.apply(promise, [arg]);
 				resolver.resolve(value, true);
 			}
 			catch (e) {
@@ -196,14 +196,14 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 			}
 		};
 	else
-		acceptWrapper = function(arg) {
-			resolver.accept(arg, true);
+		fulfillWrapper = function(arg) {
+			resolver.fulfill(arg, true);
 		};
 	
 	if (rejectCB)
 		rejectWrapper = function(arg) {
 			try {
-				var value = rejectCB.apply(future, [arg]);
+				var value = rejectCB.apply(promise, [arg]);
 				resolver.resolve(value, true);
 			}
 			catch (e) {
@@ -215,46 +215,46 @@ cloudeebus.Future.prototype.then = function(acceptCB, rejectCB) {
 			resolver.reject(arg, true);
 		};
 	
-	this.appendWrappers(acceptWrapper,rejectWrapper);
-	return future;
+	this.appendWrappers(fulfillWrapper,rejectWrapper);
+	return promise;
 };
 
 
-cloudeebus.Future.prototype["catch"] = function(rejectCB) {
+cloudeebus.Promise.prototype["catch"] = function(rejectCB) {
 	return this.then(undefined,rejectCB);
 };
 
 
-cloudeebus.Future.prototype.done = function(acceptCB, rejectCB) {
-	this.appendWrappers(acceptCB,rejectCB);
+cloudeebus.Promise.prototype.done = function(fulfillCB, rejectCB) {
+	this.appendWrappers(fulfillCB,rejectCB);
 };
 
 
-cloudeebus.Future.resolve = function(value) {
-	var future = new cloudeebus.Future();
-	future.resolver.resolve(value);
-	return future;
+cloudeebus.Promise.resolve = function(value) {
+	var promise = new cloudeebus.Promise();
+	promise.resolver.resolve(value);
+	return promise;
 };
 
 
-cloudeebus.Future.accept = function(value) {
-	var future = new cloudeebus.Future();
-	future.resolver.accept(value);
-	return future;
+cloudeebus.Promise.fulfill = function(value) {
+	var promise = new cloudeebus.Promise();
+	promise.resolver.fulfill(value);
+	return promise;
 };
 
 
-cloudeebus.Future.reject = function(value) {
-	var future = new cloudeebus.Future();
-	future.resolver.reject(value);
-	return future;
+cloudeebus.Promise.reject = function(value) {
+	var promise = new cloudeebus.Promise();
+	promise.resolver.reject(value);
+	return promise;
 };
 
 
-cloudeebus.Future.any = function() {
-	var future = new cloudeebus.Future();
-	var resolver = future.resolver;
-	var acceptCallback = function(arg) {
+cloudeebus.Promise.any = function() {
+	var promise = new cloudeebus.Promise();
+	var resolver = promise.resolver;
+	var fulfillCallback = function(arg) {
 		resolver.resolve(arg, true);
 	};
 	var rejectCallback = function(arg) {
@@ -264,14 +264,14 @@ cloudeebus.Future.any = function() {
 		resolver.resolve(undefined, true);
 	else
 		for (i in arguments) 
-			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
-	return future;
+			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
+	return promise;
 };
 
 
-cloudeebus.Future.every = function() {
-	var future = new cloudeebus.Future();
-	var resolver = future.resolver;
+cloudeebus.Promise.every = function() {
+	var promise = new cloudeebus.Promise();
+	var resolver = promise.resolver;
 	var index = 0;
 	var countdown = arguments.length;
 	var args = new Array(countdown);
@@ -282,27 +282,27 @@ cloudeebus.Future.every = function() {
 		resolver.resolve(undefined, true);
 	else
 		for (i in arguments) {
-			var acceptCallback = function(arg) {
+			var fulfillCallback = function(arg) {
 				args[index] = arg;
 				countdown--;
 				if (countdown == 0)
 					resolver.resolve(args, true);
 			};
 			index++;
-			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
 		}
 	
-	return future;
+	return promise;
 };
 
 
-cloudeebus.Future.some = function() {
-	var future = new cloudeebus.Future();
-	var resolver = future.resolver;
+cloudeebus.Promise.some = function() {
+	var promise = new cloudeebus.Promise();
+	var resolver = promise.resolver;
 	var index = 0;
 	var countdown = arguments.length;
 	var args = new Array(countdown);
-	var acceptCallback = function(arg) {
+	var fulfillCallback = function(arg) {
 		resolver.resolve(arg, true);
 	};
 	if (arguments.length == 0)
@@ -316,10 +316,10 @@ cloudeebus.Future.some = function() {
 					resolver.reject(args, true);
 			};
 			index++;
-			Future.resolve(arguments[i]).appendWrappers(acceptCallback,rejectCallback);
+			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
 		}
 	
-	return future;
+	return promise;
 };
 
 
@@ -440,10 +440,10 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 	
 	var self = this;
 	
-	var future = new cloudeebus.Future(function (resolver) {
+	var promise = new cloudeebus.Promise(function (resolver) {
 		function callMethodSuccessCB() {
 			try {
-				resolver.accept(arguments[0], true);
+				resolver.fulfill(arguments[0], true);
 			}
 			catch (e) {
 				cloudeebus.log("Method callback exception: " + e);
@@ -476,7 +476,7 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 		dbusMsg.send();
 	});
 
-	return future;
+	return promise;
 };
 
 

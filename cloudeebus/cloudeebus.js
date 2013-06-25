@@ -175,8 +175,9 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 			  resolver.fulfill(result[0], true);
 		  }
 		  catch (e) {
-			  cloudeebus.log("Method callback exception: " + e);
-			  resolver.reject(e, true);
+			  var errorStr = cloudeebus.getError(e);
+			  cloudeebus.log("Method callback exception: " + errorStr);
+			  resolver.reject(errorStr, true);
 		  }		
 	  }
 	
@@ -241,8 +242,9 @@ cloudeebus.Service.prototype.add = function(promise) {
 			resolver.fulfill(result[0], true);
 		}
 		catch (e) {
-			cloudeebus.log("Method callback exception: " + e);
-			resolver.reject(e, true);
+			var errorStr = cloudeebus.getError(e);
+			cloudeebus.log("Method callback exception: " + errorStr);
+			resolver.reject(errorStr, true);
 		}		
 	}
 	
@@ -319,8 +321,9 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 				service._returnMethod(methodId, callDict.callIndex, true, result);
 			}
 			catch (e) {
-				cloudeebus.log("Method " + ifName + "." + method + " call on " + agent.objectPath + " exception: " + e);
-				service._returnMethod(methodId, callDict.callIndex, false, e.message);
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Method " + ifName + "." + method + " call on " + agent.objectPath + " exception: " + errorStr);
+				service._returnMethod(methodId, callDict.callIndex, false, errorStr);
 			}
 		};
 		agent.jsHdl.methodId[agent.objectPath].push(methodId);
@@ -408,7 +411,6 @@ cloudeebus.Service.prototype.addAgent = function(agent, successCB, errorCB) {
 };
 
 cloudeebus.Service.prototype._deleteWrapper = function(agent) {
-	var self = this;
 	var objJs = agent.jsHdl;
 	if (objJs.methodId[agent.objectPath]) {
 		for (var idx in objJs.methodId[agent.objectPath]) {
@@ -524,7 +526,7 @@ cloudeebus.PromiseResolver.prototype.resolve = function(value, sync) {
 			then.apply(value, [fulfillCallback, rejectCallback]);
 		}
 		catch (e) {
-			this.reject(e, true);
+			this.reject(cloudeebus.getError(e), true);
 		}
 	}
 	
@@ -578,7 +580,7 @@ cloudeebus.Promise = function(init) {
 			init.apply(this, [this.resolver]);
 		}
 		catch (e) {
-			this.resolver.reject(e, true);
+			this.resolver.reject(cloudeebus.getError(e), true);
 		}
 	}
     return this;
@@ -609,7 +611,7 @@ cloudeebus.Promise.prototype.then = function(fulfillCB, rejectCB) {
 				resolver.resolve(value, true);
 			}
 			catch (e) {
-				resolver.reject(e, true);
+				resolver.reject(cloudeebus.getError(e), true);
 			}
 		};
 	else
@@ -624,7 +626,7 @@ cloudeebus.Promise.prototype.then = function(fulfillCB, rejectCB) {
 				resolver.resolve(value, true);
 			}
 			catch (e) {
-				resolver.reject(e, true);
+				resolver.reject(cloudeebus.getError(e), true);
 			}
 		};
 	else
@@ -864,8 +866,9 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 				resolver.fulfill(result[0], true);
 			}
 			catch (e) {
-				cloudeebus.log("Method callback exception: " + e);
-				resolver.reject(e, true);
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Method callback exception: " + errorStr);
+				resolver.reject(errorStr, true);
 			}
 		}
 

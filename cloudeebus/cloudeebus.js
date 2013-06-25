@@ -169,7 +169,7 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 		  try {
 			  service.isCreated = true;
 			  var result = [cloudeebusService];
-			  resolver.accept(result[0], true);
+			  resolver.fulfill(result[0], true);
 		  }
 		  catch (e) {
 			  cloudeebus.log("Method callback exception: " + e);
@@ -235,7 +235,7 @@ cloudeebus.Service.prototype.add = function(promise) {
 	function ServiceAddedSuccessCB(serviceName) {
 		try { // calling dbus hook object function for un-translated types
 			var result = [self];
-			resolver.accept(result[0], true);
+			resolver.fulfill(result[0], true);
 		}
 		catch (e) {
 			cloudeebus.log("Method callback exception: " + e);

@@ -8,8 +8,3 @@ Proxy object properties:
 ------------------------
 - add "onPropertiesChanged(successCB)" method to automatically update properties.
 - support cloning proxies so that introspection is called only once per object type.
-
-
-DBus service support:
----------------------
-- support sending signals

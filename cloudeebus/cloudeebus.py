@@ -51,7 +51,7 @@ from xml.etree.ElementTree import XMLParser
 
 ###############################################################################
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
@@ -278,6 +278,10 @@ class XmlCbParser: # The target object of the parser
 
 
        
+###############################################################################
+def createClassName(objectPath):
+    return re.sub('/', '_', objectPath[1:])
+
 ################################################################################       
 class DynDBusClass():
     def __init__(self, className, globalCtx, localCtx):
@@ -613,7 +617,7 @@ class CloudeebusService:
         '''
         self.agentObjectPath = list[0]
         xmlTemplate = list[1]
-        self.className = re.sub('/', '_', self.agentObjectPath[1:])
+        self.className = createClassName(self.agentObjectPath)
         if (self.dynDBusClasses.has_key(self.className) == False):
             self.dynDBusClasses[self.className] = DynDBusClass(self.className, self.globalCtx, self.localCtx)
             self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
@@ -632,7 +636,7 @@ class CloudeebusService:
         arguments: objectPath, xmlTemplate
         '''
         agentObjectPath = list[0]
-        className = re.sub('/', '_', agentObjectPath[1:])
+        className = createClassName(agentObjectPath)
 
         if (self.serviceAgents.has_key(className)):
             self.serviceAgents[self.className].remove_from_connection()

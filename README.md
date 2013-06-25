@@ -45,6 +45,14 @@ The Cloudeebus server must be run either with credentials and a whitelist to
 	                        -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0
 
 
+Documentation
+-------------
+
+  * [Cloudeebus](http://01.org/cloudeebus) project home page on [01.org](http://01.org)
+  * [Javascript API](https://github.com/01org/cloudeebus/wiki/API) reference.
+  * [Architecture](https://github.com/01org/cloudeebus/wiki/Architecture) block diagram.
+
+
 Examples
 --------
 
@@ -66,6 +74,7 @@ Cloudeebus runs with credentials and a whitelist that are matched by the
 	firefox ./doc/sample/cloudeebus.html &
 
 The sample page is also online as a [live demo](http://01org.github.com/cloudeebus/).
+
 
 Acknowledgements
 ----------------

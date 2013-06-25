@@ -51,6 +51,8 @@ cloudeebus.getError = function(error) {
 		return error.desc;
 	if (error.uri)
 		return error.uri;
+	if (error.name && error.message)
+		return error.name + " : " + error.message;
 	if (error.message)
 		return error.message;
 	return error;
@@ -87,9 +89,10 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 	}
 	
 	function onWAMPSessionAuthErrorCB(error) {
-		cloudeebus.log("Authentication error: " + cloudeebus.getError(error));
+		var errorStr = cloudeebus.getError(error);
+		cloudeebus.log("Authentication error: " + errorStr);
 		if (errorCB)
-			errorCB(cloudeebus.getError(error));
+			errorCB(errorStr);
 	}
 	
 	function onWAMPSessionAuthenticatedCB(permissions) {
@@ -178,7 +181,7 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	  }
 	
 	  function busServiceErrorSuccessCB(error) {
-		  resolver.reject(error, true);
+		  resolver.reject(cloudeebus.getError(error), true);
 	  }
 	
 	  cloudeebusService.add(this).then(busServiceAddedSuccessCB, busServiceErrorSuccessCB);
@@ -244,8 +247,9 @@ cloudeebus.Service.prototype.add = function(promise) {
 	}
 	
 	function ServiceAddedErrorCB(error) {
-		cloudeebus.log("Error adding service method: " + self.name + ", error: " + cloudeebus.getError(error));
-		self.promise.resolver.reject(cloudeebus.getError(error), true);
+		var errorStr = cloudeebus.getError(error);
+		cloudeebus.log("Error adding service method: " + self.name + ", error: " + errorStr);
+		self.promise.resolver.reject(errorStr, true);
 	}
 
 	var arglist = [
@@ -265,7 +269,7 @@ cloudeebus.Service.prototype.remove = function(successCB, errorCB) {
 				successCB(serviceName);
 			}
 			catch (e) {
-				alert("Exception removing service " + serviceName + " : " + e);
+				alert("Exception removing service " + serviceName + " : " + cloudeebus.getError(e));
 			}
 		}
 	}
@@ -379,7 +383,7 @@ cloudeebus.Service.prototype.addAgent = function(agent, successCB, errorCB) {
 				successCB(objPath);
 			}
 			catch (e) {
-				alert("Exception adding agent " + agent.objectPath + " : " + e);
+				alert("Exception adding agent " + agent.objectPath + " : " + cloudeebus.getError(e));
 			}
 		}
 	}
@@ -388,8 +392,9 @@ cloudeebus.Service.prototype.addAgent = function(agent, successCB, errorCB) {
 		this._createWrapper(agent);
 	}
 	catch (e) {
-		alert("Exception creating agent wrapper " + agent.objectPath + " : " + e);
-		errorCB(e);
+		var errorStr = cloudeebus.getError(e);
+		alert("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+		errorCB(errorStr);
 		return;
 	}
 	
@@ -413,7 +418,7 @@ cloudeebus.Service.prototype._deleteWrapper = function(agent) {
 				objJs.methodId[agent.objectPath][idx] = null;
 			}
 			catch (e) {
-				cloudeebus.log("Unsubscribe error: " + e);
+				cloudeebus.log("Unsubscribe error: " + cloudeebus.getError(e));
 			}
 		}
 		delete objJs.methodId[agent.objectPath];
@@ -427,8 +432,9 @@ cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
 				successCB(agent);
 			}
 			catch (e) {
-				alert("Exception deleting agent " + rmAgent.objectPath + " : " + e);
-				errorCB(e);
+				var errorStr = cloudeebus.getError(e);
+				alert("Exception deleting agent " + rmAgent.objectPath + " : " + errorStr);
+				errorCB(errorStr);
 			}
 		}
 	}
@@ -437,8 +443,9 @@ cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
 		this._deleteWrapper(rmAgent);
 	}
 	catch (e) {
-		alert("Exception deleting agent wrapper " + rmAgent.objectPath + " : " + e);
-		errorCB(e);
+		var errorStr = cloudeebus.getError(e);
+		alert("Exception deleting agent wrapper " + rmAgent.objectPath + " : " + errorStr);
+		errorCB(errorStr);
 	}
 	
 	var arglist = [
@@ -863,8 +870,9 @@ cloudeebus.ProxyObject.prototype.callMethod = function(ifName, method, args, sig
 		}
 
 		function callMethodErrorCB(error) {
-			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + cloudeebus.getError(error));
-			resolver.reject(cloudeebus.getError(error), true);
+			var errorStr = cloudeebus.getError(error);
+			cloudeebus.log("Error calling method: " + method + " on object: " + self.objectPath + " : " + errorStr);
+			resolver.reject(errorStr, true);
 		}
 
 		var arglist = [
@@ -894,9 +902,10 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, hand
 				handlerCB.apply(self, eval(data));
 			}
 			catch (e) {
-				cloudeebus.log("Signal handler exception: " + e);
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Signal handler exception: " + errorStr);
 				if (errorCB)
-					errorCB(e);
+					errorCB(errorStr);
 			}
 		}
 	}
@@ -906,14 +915,15 @@ cloudeebus.ProxyObject.prototype.connectToSignal = function(ifName, signal, hand
 			self.wampSession.subscribe(str, signalHandler);
 		}
 		catch (e) {
-			cloudeebus.log("Subscribe error: " + e);
+			cloudeebus.log("Subscribe error: " + cloudeebus.getError(e));
 		}
 	}
 
 	function connectToSignalErrorCB(error) {
-		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + cloudeebus.getError(error));
+		var errorStr = cloudeebus.getError(error);
+		cloudeebus.log("Error connecting to signal: " + signal + " on object: " + self.objectPath + " : " + errorStr);
 		if (errorCB)
-			errorCB(cloudeebus.getError(error));
+			errorCB(cloudeebus.getError(errorStr));
 	}
 
 	var arglist = [
@@ -934,6 +944,6 @@ cloudeebus.ProxyObject.prototype.disconnectSignal = function(ifName, signal) {
 		this.wampSession.unsubscribe(this.busConnection.name + "#" + this.busName + "#" + this.objectPath + "#" + ifName + "#" + signal);
 	}
 	catch (e) {
-		cloudeebus.log("Unsubscribe error: " + e);
+		cloudeebus.log("Unsubscribe error: " + cloudeebus.getError(e));
 	}
 };

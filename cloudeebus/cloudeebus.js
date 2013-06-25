@@ -213,7 +213,7 @@ cloudeebus.BusConnection.prototype.removeService = function(serviceName, success
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-Agent = function(srvDbusName, objPath, jsHdl, xml) {
+cloudeebus.Agent = function(srvDbusName, objPath, jsHdl, xml) {
 	this.srvName = srvDbusName;
 	this.registered = false;
 	this.xml = xml;
@@ -348,7 +348,7 @@ cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 		
 	if ((agent.jsHdl[signal] == undefined || agent.jsHdl[signal] == null) && !methodExist) 
 		agent.jsHdl[signal] = function() {
-			service.emitSignal(agent.objectPath, signal, arguments[0]);
+			service._emitSignal(agent.objectPath, signal, arguments[0]);
 		};
 	else
 		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
@@ -372,7 +372,7 @@ cloudeebus.Service.prototype._createWrapper = function(agent) {
 			}
 			if (ifChild.nodeName == "signal") {
 				var metName = ifChild.attributes.getNamedItem("name").value;
-				self._addSignal(objectPath, ifName, metName, objectJS);
+				self._addSignal(ifName, metName, agent);
 			}
 			ifChild = ifChild.nextSibling;
 		}

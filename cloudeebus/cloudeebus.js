@@ -249,7 +249,7 @@ cloudeebus.Service.prototype.remove = function() {
 		
 		for (var idx in self.agents) {
 			if (self.agents[idx]) {
-				self.delAgent(self.agents[idx]);
+				self.removeAgent(self.agents[idx]);
 			}
 		}
 		
@@ -422,11 +422,11 @@ cloudeebus.Service.prototype._deleteWrapper = function(agent) {
 	}
 };
 
-cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
+cloudeebus.Service.prototype.removeAgent = function(rmAgent, successCB, errorCB) {
 	var self = this;
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
-		function ServiceDelAgentSuccessCB(agent) {
+		function ServiceRemoveAgentSuccessCB(agent) {
 			try { // calling dbus hook object function for un-translated types
 				self.agents.push(agent);
 				agent.registered = true;
@@ -440,7 +440,7 @@ cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
 			}		
 		}
 
-		function ServiceDelAgentErrorCB(error) {
+		function ServiceRemoveAgentErrorCB(error) {
 			var errorStr = cloudeebus.getError(error);
 			cloudeebus.log("Error removing agent : " + rmAgent.objectPath + ", error: " + errorStr);
 			self.promise.resolver.reject(errorStr, true);
@@ -460,7 +460,7 @@ cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
 		    ];
 	
 		// call dbusSend with bus type, destination, object, message and arguments
-		self.wampSession.call("serviceDelAgent", arglist).then(ServiceDelAgentSuccessCB, ServiceDelAgentErrorCB);
+		self.wampSession.call("serviceDelAgent", arglist).then(ServiceRemoveAgentSuccessCB, ServiceRemoveAgentErrorCB);
 	});
 	
 	return promise;

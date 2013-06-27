@@ -608,7 +608,7 @@ class CloudeebusService:
             self.services.pop(self.srvName)
             return self.srvName
         else:
-            raise Exception(self.srvName + " do not exist")
+            raise Exception(self.srvName + " does not exist")
                    
     @exportRpc
     def serviceAddAgent(self, list):

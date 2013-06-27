@@ -388,7 +388,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 		}
 		catch (e) {
 			var errorStr = cloudeebus.getError(e);
-			alert("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+			cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
 			resolver.reject(errorStr, true);
 			return;
 		}
@@ -451,7 +451,7 @@ cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
 		}
 		catch (e) {
 			var errorStr = cloudeebus.getError(e);
-			alert("Exception removing wrapper of agent " + rmAgent.objectPath + " : " + errorStr);
+			cloudeebus.log("Exception removing wrapper of agent " + rmAgent.objectPath + " : " + errorStr);
 			errorCB(errorStr);
 		}
 		

@@ -18,6 +18,7 @@
         <center><h1>cloudeebus</h1></center>
         <br>
 		<textarea style="width:80%" rows="32" id="script">var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample1"><method name="Release"></method><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><method name="Variant"><arg type="a{sv}" name="arg1"/><arg type="a{sv}" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="v" name="result"/></signal></interface><interface name="org.cloudeebus.Sample2"><method name="Div"><arg type="d" name="arg1"/><arg type="d" name="arg2"/><arg type="d" name="result" direction="out"/></method></interface></node>';
+
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -41,8 +42,7 @@ sampleObjectHandler = {
     return a;
   }, 
   Release: function() {
-    cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
-    cloudeebus.SessionBus().service.remove(logCB, errorCB);
+    gService.remove().then(logCB, errorCB);
   },
   interfaceProxies : {
     "org.cloudeebus.Sample2" : {
@@ -67,8 +67,7 @@ sampleObjectHandler2 = {
     return a;
   }, 
       Release: function() {
-        cloudeebus.SessionBus().service.delAgent("/org/cloudeebus/Sample", logCB, errorCB);
-        cloudeebus.SessionBus().service.remove(logCB, errorCB);
+        gService.remove().then(logCB, errorCB);
       },
     },
     "org.cloudeebus.Sample2" : {
@@ -80,17 +79,22 @@ sampleObjectHandler2 = {
 };
 
 function addAgents(service) {
+  gService = service;
   var agent1 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
-  cloudeebus.log("Adding agent " + agent1.name + " on " + service.name + "and mapped on Javascript object: 'sampleObjectHandler");
-  service.addAgent(agent1, logCB, errorCB);
+  cloudeebus.log("Adding agent " + agent1.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
+  service.addAgent(agent1).then(logCB, errorCB);
   
   var agent2 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample2", sampleObjectHandler2, sampleXml);
-  cloudeebus.log("Adding agent " + agent2.name + " on " + service.name + "and mapped on Javascript object: 'sampleObjectHandler2");
-  service.addAgent(agent2, logCB, errorCB);
+  cloudeebus.log("Adding agent " + agent2.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler2");
+  service.addAgent(agent2).then(logCB, errorCB);
 }
 
 function connectSuccess() {
-  cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgents, errorCB);
+  if (1)
+  	cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgents, errorCB);
+  else {
+    gService.remove().then(logCB, errorCB);
+  }
 }
 
 cloudeebus.connect("ws://localhost:9003", null, connectSuccess, errorCB);

@@ -249,7 +249,6 @@ cloudeebus.Service.prototype.remove = function() {
 		
 		for (var idx in self.agents) {
 			if (self.agents[idx]) {
-				cloudeebus.log("Removing agent : " + JSON.stringify(self.agents[idx]));
 				self.delAgent(self.agents[idx]);
 			}
 		}
@@ -360,40 +359,50 @@ cloudeebus.Service.prototype._createWrapper = function(agent) {
 	}
 };
 
-cloudeebus.Service.prototype.addAgent = function(agent, successCB, errorCB) {
+cloudeebus.Service.prototype.addAgent = function(agent) {
 	var self = this;
 	
-	function ServiceAddAgentSuccessCB(objPath) {
-		self.agents.push(agent);
-		agent.registered = true;
-		cloudeebus.log("Agent pushed : " + JSON.stringify(agent))
-		if (successCB) {
-			try {
-				successCB(objPath);
+	var promise = new cloudeebus.Promise(function (resolver) {
+		function ServiceAddAgentSuccessCB(objPath) {
+			try { // calling dbus hook object function for un-translated types
+				self.agents.push(agent);
+				agent.registered = true;
+				var result = [ objPath ];
+				resolver.fulfill(result[0], true);
 			}
 			catch (e) {
-				alert("Exception adding agent " + agent.objectPath + " : " + cloudeebus.getError(e));
-			}
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Method callback exception: " + errorStr);
+				resolver.reject(errorStr, true);
+			}		
 		}
-	}
+		
+		function ServiceAddAgenterrorCB(error) {
+			var errorStr = cloudeebus.getError(error);
+			cloudeebus.log("Error adding agent : " + agent.objectPath + ", error: " + errorStr);
+			self.promise.resolver.reject(errorStr, true);
+		}
+		
+		try {
+			self._createWrapper(agent);
+		}
+		catch (e) {
+			var errorStr = cloudeebus.getError(e);
+			alert("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+			resolver.reject(errorStr, true);
+			return;
+		}
+		
+		var arglist = [
+		    agent.objectPath,
+		    agent.xml
+		    ];
 	
-	try {
-		this._createWrapper(agent);
-	}
-	catch (e) {
-		var errorStr = cloudeebus.getError(e);
-		alert("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
-		errorCB(errorStr);
-		return;
-	}
+		// call dbusSend with bus type, destination, object, message and arguments
+		self.wampSession.call("serviceAddAgent", arglist).then(ServiceAddAgentSuccessCB, ServiceAddAgenterrorCB);
+	});
 	
-	var arglist = [
-	    agent.objectPath,
-	    agent.xml
-	    ];
-
-	// call dbusSend with bus type, destination, object, message and arguments
-	this.wampSession.call("serviceAddAgent", arglist).then(ServiceAddAgentSuccessCB, errorCB);
+	return promise;
 };
 
 cloudeebus.Service.prototype._deleteWrapper = function(agent) {
@@ -414,34 +423,47 @@ cloudeebus.Service.prototype._deleteWrapper = function(agent) {
 };
 
 cloudeebus.Service.prototype.delAgent = function(rmAgent, successCB, errorCB) {
-	function ServiceDelAgentSuccessCB(agent) {
-		if (successCB) {
-			try {
-				successCB(agent);
+	var self = this;
+	
+	var promise = new cloudeebus.Promise(function (resolver) {
+		function ServiceDelAgentSuccessCB(agent) {
+			try { // calling dbus hook object function for un-translated types
+				self.agents.push(agent);
+				agent.registered = true;
+				var result = [ agent ];
+				resolver.fulfill(result[0], true);
 			}
 			catch (e) {
 				var errorStr = cloudeebus.getError(e);
-				alert("Exception deleting agent " + rmAgent.objectPath + " : " + errorStr);
-				errorCB(errorStr);
-			}
+				cloudeebus.log("Method callback exception: " + errorStr);
+				resolver.reject(errorStr, true);
+			}		
 		}
-	}
 
-	try {
-		this._deleteWrapper(rmAgent);
-	}
-	catch (e) {
-		var errorStr = cloudeebus.getError(e);
-		alert("Exception deleting agent wrapper " + rmAgent.objectPath + " : " + errorStr);
-		errorCB(errorStr);
-	}
+		function ServiceDelAgentErrorCB(error) {
+			var errorStr = cloudeebus.getError(error);
+			cloudeebus.log("Error removing agent : " + rmAgent.objectPath + ", error: " + errorStr);
+			self.promise.resolver.reject(errorStr, true);
+		}
+
+		try {
+			self._deleteWrapper(rmAgent);
+		}
+		catch (e) {
+			var errorStr = cloudeebus.getError(e);
+			alert("Exception removing wrapper of agent " + rmAgent.objectPath + " : " + errorStr);
+			errorCB(errorStr);
+		}
+		
+		var arglist = [
+		    rmAgent.objectPath
+		    ];
 	
-	var arglist = [
-	    rmAgent.objectPath
-	    ];
-
-	// call dbusSend with bus type, destination, object, message and arguments
-	this.wampSession.call("serviceDelAgent", arglist).then(ServiceDelAgentSuccessCB, errorCB);
+		// call dbusSend with bus type, destination, object, message and arguments
+		self.wampSession.call("serviceDelAgent", arglist).then(ServiceDelAgentSuccessCB, ServiceDelAgentErrorCB);
+	});
+	
+	return promise;
 };
 
 cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, success, result, successCB, errorCB) {

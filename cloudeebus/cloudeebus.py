@@ -592,7 +592,7 @@ class CloudeebusService:
         arguments: busName, srvName
         '''
         busName = list[0]
-        self.bus =  cache.dbusConnexion( busName['name'] )
+        self.bus =  cache.dbusConnexion( busName )
         self.srvName = list[1]
         if (self.services.has_key(self.srvName) == False):            
             self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)

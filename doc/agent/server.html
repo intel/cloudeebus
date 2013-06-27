@@ -81,11 +81,11 @@ sampleObjectHandler2 = {
 
 function addAgents(service) {
   var agent1 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
-  cloudeebus.log("Adding agent " + agent1.name + " on " + service.name + "and mapped on Javascript object: 'sampleObjectHandler");
+  cloudeebus.log("Adding agent " + agent1.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
   service.addAgent(agent1, logCB, errorCB);
   
   var agent2 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample2", sampleObjectHandler2, sampleXml);
-  cloudeebus.log("Adding agent " + agent2.name + " on " + service.name + "and mapped on Javascript object: 'sampleObjectHandler2");
+  cloudeebus.log("Adding agent " + agent2.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler2");
   service.addAgent(agent2, logCB, errorCB);
 }
 

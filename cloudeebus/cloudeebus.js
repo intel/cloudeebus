@@ -199,8 +199,9 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 };
 
 
+
 /*****************************************************************************/
-//Generic definition for an agent. An agent need :
+//Generic definition for an agent. An agent needs :
 //srvDbusName : the DBus parent service
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
@@ -223,6 +224,7 @@ cloudeebus.Service = function(session, busConnection, name) {
 	this.isCreated = false;
 	return this;
 };
+
 
 cloudeebus.Service.prototype.remove = function() {
 	var self = this;
@@ -262,6 +264,7 @@ cloudeebus.Service.prototype.remove = function() {
 	return promise;
 };
 
+
 cloudeebus.Service.prototype._searchMethod = function(ifName, method, objectJS) {
 
 	var funcToCall = null;
@@ -278,6 +281,7 @@ cloudeebus.Service.prototype._searchMethod = function(ifName, method, objectJS) 
 
 	return funcToCall;
 };
+
 
 cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 
@@ -310,6 +314,7 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 	}
 };
 
+
 cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 	var service = this;
 	var methodExist = false;
@@ -331,6 +336,7 @@ cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 	else
 		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
 };
+
 
 cloudeebus.Service.prototype._createWrapper = function(agent) {
 	var self = this;
@@ -356,6 +362,7 @@ cloudeebus.Service.prototype._createWrapper = function(agent) {
 		}
 	}
 };
+
 
 cloudeebus.Service.prototype.addAgent = function(agent) {
 	var self = this;
@@ -403,6 +410,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	return promise;
 };
 
+
 cloudeebus.Service.prototype._deleteWrapper = function(agent) {
 	var objJs = agent.jsHdl;
 	if (objJs.methodId[agent.objectPath]) {
@@ -419,6 +427,7 @@ cloudeebus.Service.prototype._deleteWrapper = function(agent) {
 		delete objJs.methodId[agent.objectPath];
 	}
 };
+
 
 cloudeebus.Service.prototype.removeAgent = function(rmAgent, successCB, errorCB) {
 	var self = this;
@@ -464,6 +473,7 @@ cloudeebus.Service.prototype.removeAgent = function(rmAgent, successCB, errorCB)
 	return promise;
 };
 
+
 cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, success, result, successCB, errorCB) {
 	var arglist = [
 	    methodId,
@@ -474,6 +484,7 @@ cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, succe
 
 	this.wampSession.call("returnMethod", arglist).then(successCB, errorCB);
 };
+
 
 cloudeebus.Service.prototype._emitSignal = function(objectPath, signalName, result, successCB, errorCB) {
 	var arglist = [

@@ -166,13 +166,12 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
-	  cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
+		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
 		function ServiceAddedSuccessCB(serviceName) {
 			try { // calling dbus hook object function for un-translated types
 				cloudeebusService.isCreated = true;
-				var result = [ cloudeebusService ];
-				resolver.fulfill(result[0], true);
+				resolver.fulfill(cloudeebusService, true);
 			}
 			catch (e) {
 				var errorStr = cloudeebus.getError(e);
@@ -184,7 +183,7 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 		function ServiceAddedErrorCB(error) {
 			var errorStr = cloudeebus.getError(error);
 			cloudeebus.log("Error adding service method: " + self.name + ", error: " + errorStr);
-			self.promise.resolver.reject(errorStr, true);
+			resolver.reject(errorStr, true);
 		}
 
 		var arglist = [
@@ -230,9 +229,8 @@ cloudeebus.Service.prototype.remove = function() {
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceRemovedSuccessCB(serviceName) {
-			try { // calling dbus hook object function for un-translated types
-				var result = [ serviceName ];
-				resolver.fulfill(result[0], true);
+			try {
+				resolver.fulfill(serviceName, true);
 			}
 			catch (e) {
 				var errorStr = cloudeebus.getError(e);

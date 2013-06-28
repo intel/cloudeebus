@@ -309,7 +309,6 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 			}
 		};
 		agent.jsHdl.methodId[agent.objectPath].push(methodId);
-		cloudeebus.log("subscribe " + methodId);
 		this.wampSession.subscribe(methodId, agent.jsHdl.wrapperFunc[method]);
 	}
 };

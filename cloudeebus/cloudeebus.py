@@ -743,9 +743,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--credentials',
         help='path to credentials file')
     parser.add_argument('-w', '--whitelist',
-        help='path to whitelist file')
+        help='path to whitelist file (which the list of allowed DBus service to use)')
     parser.add_argument('-s', '--servicelist',
-        help='path to servicelist file')
+        help='path to servicelist file (which the list of allowed DBus service to create (=agent))')
     parser.add_argument('-n', '--netmask',
         help='netmask,IP filter (comma separated.) eg. : -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0')
     

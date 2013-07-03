@@ -48,13 +48,15 @@ function gotDictResult(result) {
 
 function gotDivResult(result) {
   cloudeebus.log("gotDivResult: " + result);
-  var dictionary = {Name: "Mickey",
-  				 Sisters: [""], 
-  				 Married: true,
-  				 Divorced: 0,
-  				 Friends: ["Donald", "Dingo"],
-  				 Others: [""]};
-  sampleProxy.Variant(dictionary).then(gotDictResult,errorCB);  
+  if (result % 1 == 0) {
+	  var dictionary = {Name: "Mickey",
+	  				 Sisters: [""], 
+	  				 Married: true,
+	  				 Divorced: 0,
+	  				 Friends: ["Donald", "Dingo"],
+	  				 Others: [""]};
+	  sampleProxy.Variant(dictionary).then(gotDictResult,errorCB);
+  }  
 //  sampleProxy.Release();
 }
 
@@ -88,7 +90,7 @@ function connectSuccess() {
   cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
 }
 
-cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
 		<input type="button" value="run script" onclick="evalScript()"/>

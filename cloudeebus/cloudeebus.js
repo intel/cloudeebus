@@ -45,10 +45,18 @@ cloudeebus.log = function(msg) {
 };
 
 cloudeebus.getError = function(error) {
+	if (error.desc && error.uri)
+		return error.desc + " : " + error.uri;
 	if (error.desc)
 		return error.desc;
+	if (error.uri)
+		return error.uri;
+	if (error.name && error.message)
+		return error.name + " : " + error.message;
 	if (error.message)
 		return error.message;
+	if (error.name)
+		return error.name;
 	return error;
 };
 
@@ -102,11 +110,13 @@ cloudeebus.connect = function(uri, manifest, successCB, errorCB) {
 	
 	function onWAMPSessionConnectedCB(session) {
 		cloudeebus.wampSession = session;
-		if (manifest)
+		if (manifest) {
 			cloudeebus.wampSession.authreq(
 					manifest.name, 
-					{permissions: manifest.permissions}
+					{permissions: manifest.permissions, 
+						 services: manifest.services}
 				).then(onWAMPSessionChallengedCB, onWAMPSessionAuthErrorCB);
+		}
 		else
 			cloudeebus.wampSession.authreq().then(function() {
 				cloudeebus.wampSession.auth().then(onWAMPSessionAuthenticatedCB, onWAMPSessionAuthErrorCB);
@@ -158,6 +168,9 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 
 cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
+
+	if (!serviceName)
+		serviceName = "";
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);

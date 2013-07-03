@@ -55,6 +55,7 @@ VERSION = "0.5.99"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []
+SERVICELIST = []
 NETMASK =  []
 
 ###############################################################################
@@ -435,6 +436,7 @@ class CloudeebusService:
         self.permissions = {};
         self.permissions['permissions'] = permissions['permissions']
         self.permissions['authextra'] = permissions['authextra']
+        self.permissions['services'] = permissions['services']
         self.proxyObjects = {}
         self.proxyMethods = {}
         self.pendingCalls = []
@@ -594,7 +596,10 @@ class CloudeebusService:
         busName = list[0]
         self.bus =  cache.dbusConnexion( busName )
         self.srvName = list[1]
-        if (self.services.has_key(self.srvName) == False):            
+        if not OPENDOOR and (SERVICELIST == [] or SERVICELIST != [] and self.permissions['services'] == None):
+            SERVICELIST.index(self.srvName)
+            
+        if (self.services.has_key(self.srvName) == False):
             self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
         return self.srvName
 
@@ -671,7 +676,8 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
     
     def getAuthPermissions(self, key, extra):
          return {'permissions': extra.get("permissions", None),
-                 'authextra': extra.get("authextra", None)}   
+                 'authextra': extra.get("authextra", None),
+                 'services': extra.get("services", None)}   
     
     def getAuthSecret(self, key):
         secret = CREDENTIALS.get(key, None)
@@ -697,8 +703,13 @@ class CloudeebusServerProtocol(WampCraServerProtocol):
             if key is None:
                 raise Exception("Authentication failed")
             # check permissions, array.index throws exception
-            for req in permissions['permissions']:
+            if (permissions['permissions'] != None):
+                for req in permissions['permissions']:
                     WHITELIST.index(req);
+            # check allowed service creation, array.index throws exception
+            if (permissions['services'] != None):
+                for req in permissions['services']:
+                    SERVICELIST.index(req);
         # create cloudeebus service instance
         self.cloudeebusService = CloudeebusService(permissions)
         # register it for RPC
@@ -732,7 +743,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--credentials',
         help='path to credentials file')
     parser.add_argument('-w', '--whitelist',
-        help='path to whitelist file')
+        help='path to whitelist file (which the list of allowed DBus service to use)')
+    parser.add_argument('-s', '--servicelist',
+        help='path to servicelist file (which the list of allowed DBus service to create (=agent))')
     parser.add_argument('-n', '--netmask',
         help='netmask,IP filter (comma separated.) eg. : -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0')
     
@@ -757,6 +770,11 @@ if __name__ == '__main__':
         WHITELIST = json.load(jfile)
         jfile.close()
         
+    if args.servicelist:
+        jfile = open(args.servicelist)
+        SERVICELIST = json.load(jfile)
+        jfile.close()
+        
     if args.netmask:
         iplist = args.netmask.split(",")
         for ip in iplist:
@@ -769,6 +787,14 @@ if __name__ == '__main__':
                 mask = "255.255.255.255" 
             NETMASK.append( {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)} )
     
+    if args.debug:
+        print "OPENDOOR='" + str(OPENDOOR) + "'" 
+        print "CREDENTIALS='" + str(args.credentials) + "'" 
+        print "WHITELIST='" + str(args.whitelist) + "'"
+        print "SERVICELIST='" + str(args.servicelist) + "'" 
+        print "NETMASK='" + str(args.netmask) + "'"
+        print 
+        
     uri = "ws://localhost:" + args.port
     
     factory = WampServerFactory(uri, debugWamp = args.debug)

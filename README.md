@@ -32,17 +32,21 @@ The Cloudeebus server must be run either with credentials and a whitelist to
 	
 	optional arguments:
 	  -h, --help            show this help message and exit
-	  -d, --debug           log debug info on standard output
 	  -v, --version         print version and exit
+	  -d, --debug           log debug info on standard output
 	  -o, --opendoor        allow anonymous access to all services
 	  -p PORT, --port PORT  port number
 	  -c CREDENTIALS, --credentials CREDENTIALS
-	                        path to credentials file
-	  -w WHITELIST, --whitelist WHITELIST
-	                        path to whitelist file
+		                path to credentials file
+	  -w WHITELIST , --whitelist  WHITELIST 
+		                path to whitelist file (which the list of allowed DBus
+		                service to use)
+	  -s SERVICELIST, --servicelist SERVICELIST
+		                path to servicelist file (which the list of allowed
+		                DBus service to create (=agent))
 	  -n NETMASK, --netmask NETMASK
-                        	netmask,IP filter (comma separated.) eg. :
-	                        -n 127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0
+		                netmask,IP filter (comma separated.) eg. : -n
+		                127.0.0.1,192.168.2.0/24,10.12.16.0/255.255.255.0
 
 
 Documentation
@@ -74,6 +78,22 @@ Cloudeebus runs with credentials and a whitelist that are matched by the
 	firefox ./doc/sample/cloudeebus.html &
 
 The sample page is also online as a [live demo](http://01org.github.com/cloudeebus/).
+
+### agent
+
+The /doc/agent folder contains a working client sample using credentials, whitelist and manifest and
+a working service sample using credentials, servicelist and manifest.
+One instance of cloudeebus runs with credentials and a whitelist that are matched by the 
+client page manifest.
+
+	cloudeebus.py --debug --credentials=./doc/agent/CREDENTIALS --whitelist=./doc/agent/SAMPLELIST -p 9002 &
+	firefox ./doc/agent/client.html &
+
+The other instance of cloudeebus runs with credentials and a servicelist that are matched by the 
+server page manifest.
+
+	cloudeebus.py --debug --credentials=./doc/agent/CREDENTIALS --servicelist=./doc/agent/SAMPLELIST -p 9003 &
+	firefox ./doc/agent/server.html &
 
 
 Acknowledgements

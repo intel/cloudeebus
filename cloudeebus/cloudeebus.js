@@ -45,12 +45,8 @@ cloudeebus.log = function(msg) {
 };
 
 cloudeebus.getError = function(error) {
-	if (error.desc && error.uri)
-		return error.desc + " : " + error.uri;
 	if (error.desc)
 		return error.desc;
-	if (error.uri)
-		return error.uri;
 	if (error.name && error.message)
 		return error.name + " : " + error.message;
 	if (error.message)

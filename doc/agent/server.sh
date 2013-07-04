@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cloudeebus.py -d -o -p 9003
+cloudeebus.py -d -c ./CREDENTIALS -s ./SAMPLELIST -p 9003

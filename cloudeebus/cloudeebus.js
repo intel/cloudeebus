@@ -176,7 +176,7 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
 		function ServiceAddedSuccessCB(serviceName) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				cloudeebusService.isCreated = true;
 				resolver.fulfill(cloudeebusService, true);
 			}
@@ -378,8 +378,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 			try { // calling dbus hook object function for un-translated types
 				self.agents.push(agent);
 				agent.registered = true;
-				var result = [ objPath ];
-				resolver.fulfill(result[0], true);
+				resolver.fulfill(objPath, true);
 			}
 			catch (e) {
 				var errorStr = cloudeebus.getError(e);

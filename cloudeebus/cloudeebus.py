@@ -787,15 +787,7 @@ if __name__ == '__main__':
                 ipAllowed = ip
                 mask = "255.255.255.255" 
             NETMASK.append( {'ipAllowed': ipV4ToHex(ipAllowed), 'mask' : ipV4ToHex(mask)} )
-    
-    if args.debug:
-        print "OPENDOOR='" + str(OPENDOOR) + "'" 
-        print "CREDENTIALS='" + str(args.credentials) + "'" 
-        print "WHITELIST='" + str(args.whitelist) + "'"
-        print "SERVICELIST='" + str(args.servicelist) + "'" 
-        print "NETMASK='" + str(args.netmask) + "'"
-        print 
-        
+
     uri = "ws://localhost:" + args.port
     
     factory = WampServerFactory(uri, debugWamp = args.debug)

@@ -4,10 +4,10 @@
         <script src="../../lib/autobahn.min.js"></script>
         <script src="../../cloudeebus/cloudeebus.js"></script>
         <script type="text/javascript">
-		function evalScript() {
+		function evalScript(field) {
 			eval(
 				"var lambda = function() {" +
-					document.getElementById('script').value +
+					document.getElementById(field).value +
 				"};" + 
 				"lambda();"
 			);
@@ -54,64 +54,33 @@ sampleObjectHandler = {
   Release: function() {
     gService.remove().then(logCB, errorCB);
   },
-  interfaceProxies : {
-    "org.cloudeebus.Sample2" : {
-      Div: function(a,b) {
-        cloudeebus.log("Div " + a + " / " + b);
-    	this.ResultChanged(a/b);
-        return a/b;
-      } 
-    }
+  Div: function(a,b) {
+    cloudeebus.log("Div " + a + " / " + b);
+	this.ResultChanged(a/b);
+    return a/b;
   }
 };
 
-sampleObjectHandler2 = {
-  interfaceProxies : {
-    "org.cloudeebus.Sample1" : {
-  	  Add: function(a,b) {
-    	this.interfaceProxies["org.cloudeebus.Sample1"].ResultChanged(a+b);
-    	return a+b;
-      }, 
-  Variant: function(a) {
-    cloudeebus.log("Get and return :" + JSON.stringify(a));
-    return a;
-  }, 
-      Release: function() {
-        gService.remove().then(logCB, errorCB);
-      },
-    },
-    "org.cloudeebus.Sample2" : {
-      Div: function(a,b) {
-        return a/b;
-      } 
-    }
-  }
-};
-
-function addAgents(service) {
-  gService = service;
-  var agent1 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
-  cloudeebus.log("Adding agent " + agent1.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
-  service.addAgent(agent1).then(logCB, errorCB);
-  
-  var agent2 = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample2", sampleObjectHandler2, sampleXml);
-  cloudeebus.log("Adding agent " + agent2.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler2");
-  service.addAgent(agent2).then(logCB, errorCB);
+function addAgent(service) {
+  window.gService = service;
+  var agent = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
+  cloudeebus.log("Adding agent " + agent.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
+  service.addAgent(agent).then(logCB, errorCB);
+ 
 }
 
 function connectSuccess() {
-  if (1)
-  	cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgents, errorCB);
-  else {
-    gService.remove().then(logCB, errorCB);
-  }
+  cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgent, errorCB);
 }
 
 cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
--		<input type="button" value="run script" onclick="evalScript()"/>
+-		<input type="button" value="run script" onclick="evalScript('script')"/>
 		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
+		<br>
+		<input type="button" value="Unregister service" onclick="evalScript('removeCmd')"/>
+-		<input id="removeCmd" type="text" value="window.gService.remove()"/>
 		<br>
 		<pre id="log" style="height: 20em; overflow-x: auto; overflow-y: auto; background-color: #faa;"></pre>
    </body>

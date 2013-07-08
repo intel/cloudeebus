@@ -286,14 +286,13 @@ def createClassName(objectPath):
 ################################################################################       
 class DynDBusClass():
     def __init__(self, className, globalCtx, localCtx):
-        self.className = className
         self.xmlCB = XmlCbParser(self)
         self.signature = {}
         self.class_code = ExecCode(globalCtx, localCtx)  
         self.class_code.indent_increment = 4
         self.class_code.append_stmt("import dbus")
         self.class_code.append_stmt("\n")
-        self.class_code.append_stmt("class " + self.className + "(dbus.service.Object):")
+        self.class_code.append_stmt("class " + className + "(dbus.service.Object):")
         self.class_code.indent()
         
         ## Overload of __init__ method 
@@ -622,17 +621,17 @@ class CloudeebusService:
         '''
         self.agentObjectPath = list[0]
         xmlTemplate = list[1]
-        self.className = createClassName(self.agentObjectPath)
-        if (self.dynDBusClasses.has_key(self.className) == False):
-            self.dynDBusClasses[self.className] = DynDBusClass(self.className, self.globalCtx, self.localCtx)
-            self.dynDBusClasses[self.className].createDBusServiceFromXML(xmlTemplate)
-            self.dynDBusClasses[self.className].declare()
+        className = createClassName(self.agentObjectPath)
+        if (self.dynDBusClasses.has_key(className) == False):
+            self.dynDBusClasses[className] = DynDBusClass(className, self.globalCtx, self.localCtx)
+            self.dynDBusClasses[className].createDBusServiceFromXML(xmlTemplate)
+            self.dynDBusClasses[className].declare()
 
         ## Class already exist, instanciate it if not already instanciated
-        if (self.serviceAgents.has_key(self.className) == False):
-            self.serviceAgents[self.className] = eval(self.className + "(self.bus, callback=self.srvCB, objPath=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
+        if (self.serviceAgents.has_key(className) == False):
+            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
             
-        self.serviceAgents[self.className].add_to_connection()
+        self.serviceAgents[className].add_to_connection()
         return (self.agentObjectPath)
                     
     @exportRpc
@@ -642,10 +641,12 @@ class CloudeebusService:
         '''
         agentObjectPath = list[0]
         className = createClassName(agentObjectPath)
+        
+        print 'PY Try to remove ' + className
 
         if (self.serviceAgents.has_key(className)):
-            self.serviceAgents[self.className].remove_from_connection()
-            self.serviceAgents.pop(self.className)
+            self.serviceAgents[className].remove_from_connection()
+            self.serviceAgents.pop(className)
         else:
             raise Exception(agentObjectPath + " doesn't exist!")
         

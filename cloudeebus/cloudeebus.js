@@ -45,15 +45,19 @@ cloudeebus.log = function(msg) {
 };
 
 cloudeebus.getError = function(error) {
+	if (error.desc && error.uri)
+		return error.desc + " : " + error.uri; // error cloudeebus (from python)
 	if (error.desc)
 		return error.desc;
+	if (error.uri)
+		return error.uri;
 	if (error.name && error.message)
 		return error.name + " : " + error.message;
 	if (error.message)
 		return error.message;
 	if (error.name)
 		return error.name;
-	return error;
+	return error; // error from Autobahn
 };
 
 cloudeebus.versionCheck = function(version) {

@@ -438,10 +438,18 @@ cloudeebus.Service.prototype.removeAgent = function(rmAgent) {
 	var self = this;
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
-		function ServiceRemoveAgentSuccessCB(agent) {
+		function ServiceRemoveAgentSuccessCB(objectPath) {
+			// Searching agent in list
+			var idx;
+			for (idx in self.agents)
+				if (self.agents[idx].objectPath == objectPath) {
+					agent = self.agents[idx];
+					break;
+				}
+					
 			try { // calling dbus hook object function for un-translated types
-				self.agents.pop(agent);
-				agent.registered = false;
+				self.agents.splice(idx, 1);
+				self._deleteWrapper(agent);
 				resolver.fulfill(agent, true);
 			}
 			catch (e) {
@@ -457,15 +465,6 @@ cloudeebus.Service.prototype.removeAgent = function(rmAgent) {
 			self.promise.resolver.reject(errorStr, true);
 		}
 
-		try {
-			self._deleteWrapper(rmAgent);
-		}
-		catch (e) {
-			var errorStr = cloudeebus.getError(e);
-			cloudeebus.log("Exception removing wrapper of agent " + rmAgent.objectPath + " : " + errorStr);
-			errorCB(errorStr);
-		}
-		
 		var arglist = [
 		    rmAgent.objectPath
 		    ];

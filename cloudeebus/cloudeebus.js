@@ -696,7 +696,7 @@ cloudeebus.Promise.any = function() {
 		resolver.resolve(undefined, true);
 	else
 		for (i in arguments) 
-			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
+			cloudeebus.Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
 	return promise;
 };
 
@@ -721,7 +721,7 @@ cloudeebus.Promise.every = function() {
 					resolver.resolve(args, true);
 			};
 			index++;
-			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
+			cloudeebus.Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
 		}
 	
 	return promise;
@@ -748,7 +748,7 @@ cloudeebus.Promise.some = function() {
 					resolver.reject(args, true);
 			};
 			index++;
-			Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
+			cloudeebus.Promise.resolve(arguments[i]).appendWrappers(fulfillCallback,rejectCallback);
 		}
 	
 	return promise;

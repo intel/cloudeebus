@@ -372,7 +372,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceAddAgentSuccessCB(objPath) {
-			try { // calling dbus hook object function for un-translated types
+			try {
 				self.agents.push(agent);
 				resolver.fulfill(objPath, true);
 			}
@@ -440,7 +440,7 @@ cloudeebus.Service.prototype.removeAgent = function(rmAgent) {
 					break;
 				}
 					
-			try { // calling dbus hook object function for un-translated types
+			try {
 				self.agents.splice(idx, 1);
 				self._deleteWrapper(agent);
 				resolver.fulfill(agent, true);

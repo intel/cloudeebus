@@ -175,15 +175,8 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
 		function ServiceAddedSuccessCB(serviceName) {
-			try {
-				cloudeebusService.isCreated = true;
-				resolver.fulfill(cloudeebusService, true);
-			}
-			catch (e) {
-				var errorStr = cloudeebus.getError(e);
-				cloudeebus.log("Method callback exception: " + errorStr);
-				resolver.reject(errorStr, true);
-			}		
+			cloudeebusService.isCreated = true;
+			resolver.fulfill(cloudeebusService, true);
 		}
 		
 		function ServiceAddedErrorCB(error) {
@@ -236,25 +229,12 @@ cloudeebus.Service.prototype.remove = function() {
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceRemovedSuccessCB(serviceName) {
-			try {
-				resolver.fulfill(serviceName, true);
-			}
-			catch (e) {
-				var errorStr = cloudeebus.getError(e);
-				cloudeebus.log("Method callback exception: " + errorStr);
-				resolver.reject(errorStr, true);
-			}		
+			resolver.fulfill(serviceName, true);
 		}
 		
 		function ServiceRemovedErrorCB(error) {
 			var errorStr = cloudeebus.getError(error);
 			resolver.reject(errorStr, true);
-		}
-		
-		for (var idx in self.agents) {
-			if (self.agents[idx]) {
-				self.removeAgent(self.agents[idx]);
-			}
 		}
 		
 		var arglist = [
@@ -372,15 +352,8 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceAddAgentSuccessCB(objPath) {
-			try {
-				self.agents.push(agent);
-				resolver.fulfill(objPath, true);
-			}
-			catch (e) {
-				var errorStr = cloudeebus.getError(e);
-				cloudeebus.log("Method callback exception: " + errorStr);
-				resolver.reject(errorStr, true);
-			}		
+			self.agents.push(agent);
+			resolver.fulfill(objPath, true);
 		}
 		
 		function ServiceAddAgenterrorCB(error) {
@@ -440,16 +413,9 @@ cloudeebus.Service.prototype.removeAgent = function(rmAgent) {
 					break;
 				}
 					
-			try {
-				self.agents.splice(idx, 1);
-				self._deleteWrapper(agent);
-				resolver.fulfill(agent, true);
-			}
-			catch (e) {
-				var errorStr = cloudeebus.getError(e);
-				cloudeebus.log("Method callback exception: " + errorStr);
-				resolver.reject(errorStr, true);
-			}		
+			self.agents.splice(idx, 1);
+			self._deleteWrapper(agent);
+			resolver.fulfill(agent, true);
 		}
 
 		function ServiceRemoveAgentErrorCB(error) {

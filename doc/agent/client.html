@@ -27,8 +27,6 @@ var manifest = {
 };
 
 
-var sampleProxy = null;
-
 cloudeebus.log = function(msg) {
   document.getElementById("log").innerHTML += msg + "\n";
 }
@@ -41,29 +39,13 @@ function errorCB(error) {
   cloudeebus.log(error.desc ? error.desc : error);
 }
 
-function gotDictResult(result) {
-  cloudeebus.log("gotDictResult: " + JSON.stringify(result));
-  cloudeebus.log("Name: " + result.Name);
-}
-
 function gotDivResult(result) {
   cloudeebus.log("gotDivResult: " + result);
-  if (result % 1 == 0) {
-	  var dictionary = {Name: "Mickey",
-	  				 Sisters: [""], 
-	  				 Married: true,
-	  				 Divorced: 0,
-	  				 Friends: ["Donald", "Dingo"],
-	  				 Others: [""]};
-	  sampleProxy.Variant(dictionary).then(gotDictResult,errorCB);
-  }  
-//  sampleProxy.Release();
 }
 
 function gotAddResult(result) {
   cloudeebus.log("gotAddResult: " + result);
-  logCB('Divide by 3.33');
-  sampleProxy.Div(result,3.33).then(gotDivResult,errorCB);
+  window.sampleProxy.Div(result,3.33).then(gotDivResult,errorCB);
 }
 
 function signalHandler(result) {
@@ -71,26 +53,35 @@ function signalHandler(result) {
 }
 
 function gotProxy(proxy) {
-	sampleProxy = proxy;
-   logCB(sampleProxy);
-  if (0) {
-    proxy.Release();
-    return;
-   } else {
-	  proxy.connectToSignal("org.cloudeebus.Sample1", "ResultChanged", signalHandler);
-	  logCB('Addition');
+   	proxy.connectToSignal("org.cloudeebus.Sample", "ResultChanged", signalHandler);
+   	logCB(proxy);
+   	window.sampleProxy = proxy;
+   	testProxy();
+}
+
+function testProxy() {
+	var dictionary = {Name: "Mickey",
+	  				 Sisters: [""], 
+	  				 Married: true,
+	  				 Divorced: 0,
+	  				 Friends: ["Donald", "Dingo"],
+	  				 Others: [""]};
+	window.sampleProxy.Variant(dictionary).then(logCB,errorCB);
 	  
-	  for (var i=-10; i<10; i++)
-	    proxy.Add(i,i*2).then(gotAddResult,errorCB);
-  }
-  
+	logCB('Addition');
+	for (var i=-2; i<2; i++)
+	  window.sampleProxy.Add(i,i*2).then(gotAddResult,errorCB);
 }
 
 function connectSuccess() {
-  cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
+	cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
 }
 
-cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+if (!window.sampleProxy)
+	cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+else
+	testProxy();
+
 </textarea>
 		<br>
 		<input type="button" value="run script" onclick="evalScript()"/>

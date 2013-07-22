@@ -251,12 +251,6 @@ cloudeebus.Service.prototype.remove = function() {
 			resolver.reject(errorStr, true);
 		}
 		
-		for (var idx in self.agents) {
-			if (self.agents[idx]) {
-				self.removeAgent(self.agents[idx]);
-			}
-		}
-		
 		var arglist = [
 		    self.name
 		    ];

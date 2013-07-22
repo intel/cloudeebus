@@ -70,7 +70,7 @@ function connectSuccess() {
   cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgent, errorCB);
 }
 
-if (!window.sampleProxy)
+if (!window.gService)
   cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
@@ -79,13 +79,11 @@ if (!window.sampleProxy)
 		<br>
 <textarea style="width:80%" rows="7" id="removeCmd">
 function removeService() {
-cloudeebus.log("Agent " + JSON.stringify(window.gAgent));
-	cloudeebus.log("Removing service");
-	window.gService.remove()
+	window.gService.remove();
+    cloudeebus.log("Service removed");
+	window.gService = null;
 }
 
-cloudeebus.log("Service = " + JSON.stringify(window.gService));
-cloudeebus.log("Removing agent " + JSON.stringify(window.gAgent));
 window.gService.removeAgent(window.gAgent).then(removeService, null);
 </textarea>
 		<br>

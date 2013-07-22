@@ -70,7 +70,8 @@ function connectSuccess() {
   cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgent, errorCB);
 }
 
-cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
+if (!window.sampleProxy)
+  cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
 </textarea>
 		<br>
 -		<input type="button" value="run script" onclick="evalScript('script')"/>

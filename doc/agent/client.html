@@ -53,29 +53,35 @@ function signalHandler(result) {
 }
 
 function gotProxy(proxy) {
-   	if (window.sampleProxy == null)
-		proxy.connectToSignal("org.cloudeebus.Sample", "ResultChanged", signalHandler);
-	window.sampleProxy = proxy;
+   	proxy.connectToSignal("org.cloudeebus.Sample", "ResultChanged", signalHandler);
    	logCB(proxy);
-	
+   	window.sampleProxy = proxy;
+   	testProxy();
+}
+
+function testProxy() {
 	var dictionary = {Name: "Mickey",
 	  				 Sisters: [""], 
 	  				 Married: true,
 	  				 Divorced: 0,
 	  				 Friends: ["Donald", "Dingo"],
 	  				 Others: [""]};
-	proxy.Variant(dictionary).then(logCB,errorCB);
+	window.sampleProxy.Variant(dictionary).then(logCB,errorCB);
 	  
 	logCB('Addition');
 	for (var i=-2; i<2; i++)
-	  proxy.Add(i,i*2).then(gotAddResult,errorCB);
+	  window.sampleProxy.Add(i,i*2).then(gotAddResult,errorCB);
 }
 
 function connectSuccess() {
-  cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
+	cloudeebus.SessionBus().getObject("org.cloudeebus.Sample", "/org/cloudeebus/Sample", gotProxy, errorCB);
 }
 
-cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+if (!window.sampleProxy)
+	cloudeebus.connect("ws://localhost:9002", manifest, connectSuccess, errorCB);
+else
+	testProxy();
+
 </textarea>
 		<br>
 		<input type="button" value="run script" onclick="evalScript()"/>

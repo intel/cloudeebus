@@ -767,6 +767,15 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
+		var nodes = xmlDoc.getElementsByTagName("node");
+		self.childNodeNames = [];
+		var l = nodes.length;
+		//there will always be 1 node, the parent/head node
+		if(l > 1){
+			for(var i = 1; i < l; i++){
+				self.childNodeNames.push(nodes[i].getAttribute("name"));
+			}
+		}
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.propInterfaces = [];
 		var supportDBusProperties = false;

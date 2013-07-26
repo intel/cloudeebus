@@ -619,9 +619,9 @@ class CloudeebusService:
         '''
         arguments: objectPath, xmlTemplate
         '''
-        self.agentObjectPath = list[0]
+        agentObjectPath = list[0]
         xmlTemplate = list[1]
-        className = createClassName(self.agentObjectPath)
+        className = createClassName(agentObjectPath)
         if (self.dynDBusClasses.has_key(className) == False):
             self.dynDBusClasses[className] = DynDBusClass(className, self.globalCtx, self.localCtx)
             self.dynDBusClasses[className].createDBusServiceFromXML(xmlTemplate)
@@ -629,10 +629,10 @@ class CloudeebusService:
 
         ## Class already exist, instanciate it if not already instanciated
         if (self.serviceAgents.has_key(className) == False):
-            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath=self.agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
+            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath=agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
             
         self.serviceAgents[className].add_to_connection()
-        return (self.agentObjectPath)
+        return (agentObjectPath)
                     
     @exportRpc
     def serviceDelAgent(self, list):

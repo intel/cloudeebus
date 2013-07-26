@@ -629,7 +629,7 @@ class CloudeebusService:
 
         ## Class already exist, instanciate it if not already instanciated
         if (self.serviceAgents.has_key(className) == False):
-            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath=agentObjectPath, busName=self.srvName)", self.globalCtx, self.localCtx)
+            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath='"+agentObjectPath+"', busName=self.srvName)", self.globalCtx, self.localCtx)
             
         self.serviceAgents[className].add_to_connection()
         return (agentObjectPath)

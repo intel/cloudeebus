@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="autobahn.min.js"></script>
+        <script src="cloudeebus.js"></script>
+        <script type="text/javascript">
+		function evalScript(field) {
+			eval(
+				"var lambda = function() {" +
+					document.getElementById(field).value +
+				"};" + 
+				"lambda();"
+			);
+		}
+        </script>
+    </head>
+   <body>
+        <center><h1>cloudeebus</h1></center>
+        <br>
+		<textarea style="width:80%" rows="32" id="script">
+var manifest = {
+	name: "cloudeebus",
+	key: "secret",
+	services: [
+		"org.cloudeebus.Sample"
+	]
+};
+
+
+var sampleXml= '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n<node><interface name="org.cloudeebus.Sample"><method name="Add"><arg type="i" name="arg1"/><arg type="i" name="arg2"/><arg type="i" name="result" direction="out"/></method><method name="Div"><arg type="d" name="arg1"/><arg type="d" name="arg2"/><arg type="d" name="result" direction="out"/></method><method name="Variant"><arg type="a{sv}" name="arg1"/><arg type="a{sv}" name="result" direction="out"/></method><signal name="ResultChanged"><arg type="v" name="result"/></signal></interface></node>';
+
+cloudeebus.log = function(msg) {
+  document.getElementById("log").innerHTML += msg + "\n";
+}
+
+function logCB(result) {
+  cloudeebus.log(JSON.stringify(result));
+}
+
+function errorCB(error) {
+  cloudeebus.log(cloudeebus.getError(error));
+}
+
+sampleObjectHandler = {
+  Add: function(a,b) {
+    cloudeebus.log("Add " + a + " + " + b);
+    this.ResultChanged(a+b);
+    return a+b;
+  }, 
+  Variant: function(a) {
+    cloudeebus.log("Get and return :" + JSON.stringify(a));
+    return a;
+  }, 
+  Div: function(a,b) {
+    cloudeebus.log("Div " + a + " / " + b);
+	this.ResultChanged(a/b);
+    return a/b;
+  }
+};
+
+function addAgent(service) {
+  window.gService = service;
+  var agent = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
+  cloudeebus.log("Adding agent " + agent.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
+  service.addAgent(agent).then(logCB, errorCB);
+  window.gAgent = agent;
+}
+
+function connectSuccess() {
+  cloudeebus.SessionBus().addService("org.cloudeebus.Sample").then(addAgent, errorCB);
+}
+
+if (!window.gService)
+  cloudeebus.connect("ws://localhost:9003", manifest, connectSuccess, errorCB);
+</textarea>
+		<br>
+-		<input type="button" value="run script" onclick="evalScript('script')"/>
+		<input type="button" value="clear log" onclick="document.getElementById('log').innerHTML='';"/>
+		<br>
+<textarea style="width:80%" rows="7" id="removeCmd">
+function removeService() {
+	window.gService.remove();
+    cloudeebus.log("Service removed");
+	window.gService = null;
+}
+
+window.gService.removeAgent(window.gAgent).then(removeService, null);
+</textarea>
+		<br>
+		<input type="button" value="Unregister service" onclick="evalScript('removeCmd')"/>
+		<br>
+		<pre id="log" style="height: 20em; overflow-x: auto; overflow-y: auto; background-color: #faa;"></pre>
+   </body>
+</html>

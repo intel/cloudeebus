@@ -619,8 +619,9 @@ class CloudeebusService:
         '''
         arguments: objectPath, xmlTemplate
         '''
-        agentObjectPath = list[0]
-        xmlTemplate = list[1]
+        srvName = list[0]
+        agentObjectPath = list[1]
+        xmlTemplate = list[2]
         className = createClassName(agentObjectPath)
         if (self.dynDBusClasses.has_key(className) == False):
             self.dynDBusClasses[className] = DynDBusClass(className, self.globalCtx, self.localCtx)
@@ -629,7 +630,7 @@ class CloudeebusService:
 
         ## Class already exist, instanciate it if not already instanciated
         if (self.serviceAgents.has_key(className) == False):
-            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath='"+agentObjectPath+"', busName=self.srvName)", self.globalCtx, self.localCtx)
+            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath='"+agentObjectPath+"', busName='"+srvName+"')", self.globalCtx, self.localCtx)
             
         self.serviceAgents[className].add_to_connection()
         return (agentObjectPath)

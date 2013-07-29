@@ -205,8 +205,8 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(srvDbusName, objPath, jsHdl, xml) {
-	this.srvName = srvDbusName;
+cloudeebus.Agent = function(srvName, objPath, jsHdl, xml) {
+	this.srvName = srvName;
 	this.xml = xml;
 	this.objectPath = objPath;
 	this.jsHdl = jsHdl;
@@ -353,6 +353,15 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceAddAgentSuccessCB(objPath) {
 			self.agents.push(agent);
+			try {
+				self._createWrapper(agent);
+			}
+			catch (e) {
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+				resolver.reject(errorStr, true);
+				return;
+			}		
 			resolver.fulfill(objPath, true);
 		}
 		
@@ -362,17 +371,8 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 			self.promise.resolver.reject(errorStr, true);
 		}
 		
-		try {
-			self._createWrapper(agent);
-		}
-		catch (e) {
-			var errorStr = cloudeebus.getError(e);
-			cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
-			resolver.reject(errorStr, true);
-			return;
-		}
-		
 		var arglist = [
+		    agent.srvName,
 		    agent.objectPath,
 		    agent.xml
 		    ];
@@ -767,6 +767,15 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
+		var nodes = xmlDoc.getElementsByTagName("node");
+		self.childNodeNames = [];
+		var l = nodes.length;
+		//there will always be 1 node, the parent/head node
+		if(l > 1){
+			for(var i = 1; i < l; i++){
+				self.childNodeNames.push(nodes[i].getAttribute("name"));
+			}
+		}
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.propInterfaces = [];
 		var supportDBusProperties = false;

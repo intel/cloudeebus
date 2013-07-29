@@ -297,11 +297,12 @@ class DynDBusClass():
         
         ## Overload of __init__ method 
         self.def_method("__init__")
-        self.add_method("bus, callback=None, objPath='/sample', busName='org.cloudeebus'")
+        self.add_method("bus, callback=None, objPath='/sample', srvName='org.cloudeebus'")
         self.add_stmt("self.bus = bus")
         self.add_stmt("self.objPath = objPath")
+        self.add_stmt("self.srvName = srvName")        
         self.add_stmt("self.callback = callback")        
-        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, bus_name=busName)")
+        self.add_stmt("dbus.service.Object.__init__(self, conn=bus, bus_name=srvName)")
         self.end_method()
                
         ## Create 'add_to_connection' method 
@@ -410,9 +411,9 @@ class DynDBusClass():
     def add_body_method(self):
         if (self.methodToAdd != None):
             if (self.args_str != str()):
-                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
+                self.class_code.append_stmt("self.callback(self.srvName,'" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb, %s)" % self.args_str)
             else:        
-                self.class_code.append_stmt("self.callback('" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb)")
+                self.class_code.append_stmt("self.callback(self.srvName,'" + self.methodToAdd + "', self.objPath, '"  + self.ifName + "', " + "dbus_async_cb, dbus_async_err_cb)")
 
     def add_body_signal(self):
         self.class_code.append_stmt("return") ## TODO: Remove and fix with code ad hoc
@@ -570,8 +571,8 @@ class CloudeebusService:
         else:
             raise Exception("No methodID " + methodId)
 
-    def srvCB(self, name, objPath, ifName, async_succes_cb, async_error_cb, *args):
-        methodId = self.srvName + "#" + objPath + "#" + ifName + "#" + name
+    def srvCB(self, srvName, name, objPath, ifName, async_succes_cb, async_error_cb, *args):
+        methodId = srvName + "#" + objPath + "#" + ifName + "#" + name
         cb = { 'successCB': async_succes_cb, 
                'errorCB': async_error_cb}
         if methodId not in self.servicePendingCalls:
@@ -594,25 +595,25 @@ class CloudeebusService:
         '''
         busName = list[0]
         self.bus =  cache.dbusConnexion( busName )
-        self.srvName = list[1]
+        srvName = list[1]
         if not OPENDOOR and (SERVICELIST == [] or SERVICELIST != [] and self.permissions['services'] == None):
-            SERVICELIST.index(self.srvName)
+            SERVICELIST.index(srvName)
             
-        if (self.services.has_key(self.srvName) == False):
-            self.services[self.srvName] = dbus.service.BusName(name = self.srvName, bus = self.bus)
-        return self.srvName
+        if (self.services.has_key(srvName) == False):
+            self.services[srvName] = dbus.service.BusName(name = srvName, bus = self.bus)
+        return srvName
 
     @exportRpc
     def serviceRelease(self, list):
         '''
         arguments: busName, srvName
         '''
-        self.srvName = list[0]
-        if (self.services.has_key(self.srvName) == True):
-            self.services.pop(self.srvName)
-            return self.srvName
+        srvName = list[0]
+        if (self.services.has_key(srvName) == True):
+            self.services.pop(srvName)
+            return srvName
         else:
-            raise Exception(self.srvName + " does not exist")
+            raise Exception(srvName + " does not exist")
                    
     @exportRpc
     def serviceAddAgent(self, list):
@@ -630,7 +631,7 @@ class CloudeebusService:
 
         ## Class already exist, instanciate it if not already instanciated
         if (self.serviceAgents.has_key(className) == False):
-            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath='"+agentObjectPath+"', busName='"+srvName+"')", self.globalCtx, self.localCtx)
+            self.serviceAgents[className] = eval(className + "(self.bus, callback=self.srvCB, objPath='" + agentObjectPath + "', srvName='" + srvName + "')", self.globalCtx, self.localCtx)
             
         self.serviceAgents[className].add_to_connection()
         return (agentObjectPath)

@@ -205,8 +205,7 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(srvDbusName, objPath, jsHdl, xml) {
-	this.srvName = srvDbusName;
+cloudeebus.Agent = function(objPath, jsHdl, xml) {
 	this.xml = xml;
 	this.objectPath = objPath;
 	this.jsHdl = jsHdl;
@@ -353,6 +352,15 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceAddAgentSuccessCB(objPath) {
 			self.agents.push(agent);
+			try {
+				self._createWrapper(agent);
+			}
+			catch (e) {
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+				resolver.reject(errorStr, true);
+				return;
+			}		
 			resolver.fulfill(objPath, true);
 		}
 		
@@ -360,16 +368,6 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 			var errorStr = cloudeebus.getError(error);
 			cloudeebus.log("Error adding agent : " + agent.objectPath + ", error: " + errorStr);
 			self.promise.resolver.reject(errorStr, true);
-		}
-		
-		try {
-			self._createWrapper(agent);
-		}
-		catch (e) {
-			var errorStr = cloudeebus.getError(e);
-			cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
-			resolver.reject(errorStr, true);
-			return;
 		}
 		
 		var arglist = [

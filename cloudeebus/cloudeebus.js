@@ -205,7 +205,8 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(objPath, jsHdl, xml) {
+cloudeebus.Agent = function(srvName, objPath, jsHdl, xml) {
+	this.srvName = srvName;
 	this.xml = xml;
 	this.objectPath = objPath;
 	this.jsHdl = jsHdl;
@@ -371,6 +372,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 		}
 		
 		var arglist = [
+		    agent.srvName,
 		    agent.objectPath,
 		    agent.xml
 		    ];

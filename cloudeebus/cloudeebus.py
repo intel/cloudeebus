@@ -644,8 +644,6 @@ class CloudeebusService:
         agentObjectPath = list[0]
         className = createClassName(agentObjectPath)
         
-        print 'PY Try to remove ' + className
-
         if (self.serviceAgents.has_key(className)):
             self.serviceAgents[className].remove_from_connection()
             self.serviceAgents.pop(className)

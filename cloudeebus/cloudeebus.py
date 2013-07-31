@@ -51,7 +51,7 @@ from xml.etree.ElementTree import XMLParser
 
 ###############################################################################
 
-VERSION = "0.5.99"
+VERSION = "0.5.100"
 OPENDOOR = False
 CREDENTIALS = {}
 WHITELIST = []

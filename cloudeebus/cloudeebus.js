@@ -29,8 +29,8 @@ var dbus = { // hook object for dbus types not translated by python-json
 /*****************************************************************************/
 
 var cloudeebus = window.cloudeebus = {
-		version: "0.5.99",
-		minVersion: "0.3.2"
+		version: "0.5.100",
+		minVersion: "0.5.100"
 };
 
 cloudeebus.reset = function() {
@@ -201,12 +201,10 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 
 /*****************************************************************************/
 //Generic definition for an agent. An agent needs :
-//srvDbusName : the DBus parent service
 //objPath : a DBus path to access it
 //jsHdl : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(srvName, objPath, jsHdl, xml) {
-	this.srvName = srvName;
+cloudeebus.Agent = function(objPath, jsHdl, xml) {
 	this.xml = xml;
 	this.objectPath = objPath;
 	this.jsHdl = jsHdl;
@@ -372,7 +370,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 		}
 		
 		var arglist = [
-		    agent.srvName,
+		    self.name,
 		    agent.objectPath,
 		    agent.xml
 		    ];

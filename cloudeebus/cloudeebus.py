@@ -534,7 +534,10 @@ class CloudeebusService:
         signalName = list[1]
         result = list[2]
         if (self.serviceAgents.has_key(className) == True):
-            exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "(" + str(result) + ")"
+            if (result != None):
+                exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "(" + str(result) + ")"
+            else:
+                exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "()"
             eval(exe_str, self.globalCtx, self.localCtx)
         else:
             raise Exception("No object path " + objectPath)

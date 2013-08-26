@@ -769,10 +769,8 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		self.childNodeNames = [];
 		var l = nodes.length;
 		//there will always be 1 node, the parent/head node
-		if(l > 1){
-			for(var i = 1; i < l; i++){
-				self.childNodeNames.push(nodes[i].getAttribute("name"));
-			}
+		for(var i = 1; i < l; i++){
+			self.childNodeNames.push(nodes[i].getAttribute("name"));
 		}
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.propInterfaces = [];

@@ -527,17 +527,19 @@ class CloudeebusService:
     @exportRpc
     def emitSignal(self, list):
         '''
-        arguments: agentObjectPath, signalName, result (to emit)
+        arguments: agentObjectPath, signalName, args (to emit)
         '''
         objectPath = list[0]
         className = re.sub('/', '_', objectPath[1:])
         signalName = list[1]
-        result = list[2]
-        if (self.serviceAgents.has_key(className) == True):
-            if (result != None):
-                exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "(" + str(result) + ")"
-            else:
-                exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "()"
+        args = json.loads(list[2])
+        if (self.serviceAgents.has_key(className) == True):            
+            exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "("
+            if len(args) > 0:
+                exe_str += json.dumps(args[0])
+                for idx in args[1:]:
+                    exe_str += "," + json.dumps(idx)
+            exe_str += ")"               
             eval(exe_str, self.globalCtx, self.localCtx)
         else:
             raise Exception("No object path " + objectPath)

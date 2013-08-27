@@ -305,14 +305,20 @@ cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 			methodExist = true;
 		} else {
 			agent.jsHdl.interfaceProxies[ifName][signal] = function() {
-				service._emitSignal(agent.objectPath, signal, arguments[0]);
+				var args = [];
+				for (var i=0; i < arguments.length; i++ )
+					args.push(arguments[i]);
+				service._emitSignal(agent.objectPath, signal, args);
 			};
 		return;
 	}
-		
-	if ((agent.jsHdl[signal] == undefined || agent.jsHdl[signal] == null) && !methodExist) 
+
+	if ((agent.jsHdl[signal] == undefined || agent.jsHdl[signal] == null) && !methodExist)
 		agent.jsHdl[signal] = function() {
-			service._emitSignal(agent.objectPath, signal, arguments[0]);
+			var args = [];
+			for (var i=0; i < arguments.length; i++ )
+				args.push(arguments[i]);
+			service._emitSignal(agent.objectPath, signal, args);
 		};
 	else
 		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
@@ -446,11 +452,11 @@ cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, succe
 };
 
 
-cloudeebus.Service.prototype._emitSignal = function(objectPath, signalName, result, successCB, errorCB) {
+cloudeebus.Service.prototype._emitSignal = function(objectPath, signalName, args, successCB, errorCB) {
 	var arglist = [
 	    objectPath,
 	    signalName,
-	    result
+	    JSON.stringify(args)
 	    ];
 
 	this.wampSession.call("emitSignal", arglist).then(successCB, errorCB);

@@ -60,7 +60,7 @@ sampleObjectHandler = {
 
 function addAgent(service) {
   window.gService = service;
-  var agent = new cloudeebus.Agent(service.name, "/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
+  var agent = new cloudeebus.Agent("/org/cloudeebus/Sample", sampleObjectHandler, sampleXml);
   cloudeebus.log("Adding agent " + agent.objectPath + " on " + service.name + ", mapped on Javascript object: 'sampleObjectHandler");
   service.addAgent(agent).then(logCB, errorCB);
   window.gAgent = agent;

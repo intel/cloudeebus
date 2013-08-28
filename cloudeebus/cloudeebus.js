@@ -202,12 +202,12 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 /*****************************************************************************/
 //Generic definition for an agent. An agent needs :
 //objPath : a DBus path to access it
-//jsHdl : a Javascript handler to process methods, 
+//handler : a Javascript handler to process methods, 
 //xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(objPath, jsHdl, xml) {
+cloudeebus.Agent = function(objPath, handler, xml) {
 	this.xml = xml;
 	this.objectPath = objPath;
-	this.jsHdl = jsHdl;
+	this.handler = handler;
 	return this;
 };
 
@@ -269,19 +269,19 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 
 	var service = this;
 	var methodId = this.name + "#" + agent.objectPath + "#" + ifName + "#" + method;
-	var funcToCall = this._searchMethod(ifName, method, agent.jsHdl);
+	var funcToCall = this._searchMethod(ifName, method, agent.handler);
 
 	if (funcToCall == null)
 		cloudeebus.log("Method " + method + " doesn't exist in Javascript object");
 	else {
-		agent.jsHdl.wrapperFunc[method] = function() {
+		agent.handler.wrapperFunc[method] = function() {
 			var result;
 			var methodId = arguments[0];
 			var callDict = {};
 			// affectation of callDict in eval, otherwise dictionary(='{}') interpreted as block of code by eval
 			eval("callDict = " + arguments[1]);
 			try {
-				result = funcToCall.apply(agent.jsHdl, callDict.args);
+				result = funcToCall.apply(agent.handler, callDict.args);
 				service._returnMethod(methodId, callDict.callIndex, true, result);
 			}
 			catch (e) {
@@ -290,8 +290,8 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 				service._returnMethod(methodId, callDict.callIndex, false, errorStr);
 			}
 		};
-		agent.jsHdl.methodId[agent.objectPath].push(methodId);
-		this.wampSession.subscribe(methodId, agent.jsHdl.wrapperFunc[method]);
+		agent.handler.methodId[agent.objectPath].push(methodId);
+		this.wampSession.subscribe(methodId, agent.handler.wrapperFunc[method]);
 	}
 };
 
@@ -300,11 +300,11 @@ cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 	var service = this;
 	var methodExist = false;
 
-	if (agent.jsHdl.interfaceProxies && agent.jsHdl.interfaceProxies[ifName])
-		if (agent.jsHdl.interfaceProxies[ifName][signal]) {
+	if (agent.handler.interfaceProxies && agent.handler.interfaceProxies[ifName])
+		if (agent.handler.interfaceProxies[ifName][signal]) {
 			methodExist = true;
 		} else {
-			agent.jsHdl.interfaceProxies[ifName][signal] = function() {
+			agent.handler.interfaceProxies[ifName][signal] = function() {
 				var args = [];
 				for (var i=0; i < arguments.length; i++ )
 					args.push(arguments[i]);
@@ -313,8 +313,8 @@ cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 		return;
 	}
 
-	if ((agent.jsHdl[signal] == undefined || agent.jsHdl[signal] == null) && !methodExist)
-		agent.jsHdl[signal] = function() {
+	if ((agent.handler[signal] == undefined || agent.handler[signal] == null) && !methodExist)
+		agent.handler[signal] = function() {
 			var args = [];
 			for (var i=0; i < arguments.length; i++ )
 				args.push(arguments[i]);
@@ -330,9 +330,9 @@ cloudeebus.Service.prototype._createWrapper = function(agent) {
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(agent.xml, "text/xml");
 	var ifXml = xmlDoc.getElementsByTagName("interface");
-	agent.jsHdl.wrapperFunc = {};
-	agent.jsHdl.methodId = {};
-	agent.jsHdl.methodId[agent.objectPath] = [];
+	agent.handler.wrapperFunc = {};
+	agent.handler.methodId = {};
+	agent.handler.methodId[agent.objectPath] = [];
 	for (var i=0; i < ifXml.length; i++) {
 		var ifName = ifXml[i].attributes.getNamedItem("name").value;
 		var ifChild = ifXml[i].firstChild;
@@ -390,7 +390,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 
 
 cloudeebus.Service.prototype._deleteWrapper = function(agent) {
-	var objJs = agent.jsHdl;
+	var objJs = agent.handler;
 	if (objJs.methodId[agent.objectPath]) {
 		while (objJs.methodId[agent.objectPath].length) {
 			try {
@@ -734,6 +734,7 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.busName = busName; 
 	this.objectPath = objectPath; 
 	this.interfaceProxies = {};
+	this.childNodeNames = [];
 	return this;
 };
 
@@ -772,12 +773,9 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
 		var nodes = xmlDoc.getElementsByTagName("node");
-		self.childNodeNames = [];
-		var l = nodes.length;
-		//there will always be 1 node, the parent/head node
-		for(var i = 1; i < l; i++){
+		// first node is the parent/head node
+		for(var i=1; i < nodes.length; i++)
 			self.childNodeNames.push(nodes[i].getAttribute("name"));
-		}
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.propInterfaces = [];
 		var supportDBusProperties = false;

@@ -353,7 +353,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 		function ServiceAddAgenterrorCB(error) {
 			var errorStr = cloudeebus.getError(error);
 			cloudeebus.log("Error adding agent : " + agent.objectPath + ", error: " + errorStr);
-			self.promise.resolver.reject(errorStr, true);
+			resolver.reject(errorStr, true);
 		}
 		
 		var arglist = [

@@ -29,8 +29,8 @@ var dbus = { // hook object for dbus types not translated by python-json
 /*****************************************************************************/
 
 var cloudeebus = window.cloudeebus = {
-		version: "0.5.99",
-		minVersion: "0.3.2"
+		version: "0.6.0",
+		minVersion: "0.6.0"
 };
 
 cloudeebus.reset = function() {
@@ -168,9 +168,6 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
 
-	if (!serviceName)
-		serviceName = "";
-	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
@@ -200,16 +197,11 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 
 
 /*****************************************************************************/
-//Generic definition for an agent. An agent needs :
-//srvDbusName : the DBus parent service
-//objPath : a DBus path to access it
-//jsHdl : a Javascript handler to process methods, 
-//xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(srvDbusName, objPath, jsHdl, xml) {
-	this.srvName = srvDbusName;
+
+cloudeebus.Agent = function(objectPath, handler, xml) {
 	this.xml = xml;
-	this.objectPath = objPath;
-	this.jsHdl = jsHdl;
+	this.objectPath = objectPath;
+	this.handler = handler;
 	return this;
 };
 
@@ -271,19 +263,19 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 
 	var service = this;
 	var methodId = this.name + "#" + agent.objectPath + "#" + ifName + "#" + method;
-	var funcToCall = this._searchMethod(ifName, method, agent.jsHdl);
+	var funcToCall = this._searchMethod(ifName, method, agent.handler);
 
 	if (funcToCall == null)
 		cloudeebus.log("Method " + method + " doesn't exist in Javascript object");
 	else {
-		agent.jsHdl.wrapperFunc[method] = function() {
+		agent.handler.wrapperFunc[method] = function() {
 			var result;
 			var methodId = arguments[0];
 			var callDict = {};
 			// affectation of callDict in eval, otherwise dictionary(='{}') interpreted as block of code by eval
 			eval("callDict = " + arguments[1]);
 			try {
-				result = funcToCall.apply(agent.jsHdl, callDict.args);
+				result = funcToCall.apply(agent.handler, callDict.args);
 				service._returnMethod(methodId, callDict.callIndex, true, result);
 			}
 			catch (e) {
@@ -292,32 +284,25 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 				service._returnMethod(methodId, callDict.callIndex, false, errorStr);
 			}
 		};
-		agent.jsHdl.methodId[agent.objectPath].push(methodId);
-		this.wampSession.subscribe(methodId, agent.jsHdl.wrapperFunc[method]);
+		agent.handler.methodId[agent.objectPath].push(methodId);
+		this.wampSession.subscribe(methodId, agent.handler.wrapperFunc[method]);
 	}
 };
 
 
 cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 	var service = this;
-	var methodExist = false;
 
-	if (agent.jsHdl.interfaceProxies && agent.jsHdl.interfaceProxies[ifName])
-		if (agent.jsHdl.interfaceProxies[ifName][signal]) {
-			methodExist = true;
-		} else {
-			agent.jsHdl.interfaceProxies[ifName][signal] = function() {
-				service._emitSignal(agent.objectPath, signal, arguments[0]);
-			};
-		return;
-	}
-		
-	if ((agent.jsHdl[signal] == undefined || agent.jsHdl[signal] == null) && !methodExist) 
-		agent.jsHdl[signal] = function() {
-			service._emitSignal(agent.objectPath, signal, arguments[0]);
+	if (agent.handler[signal])
+		cloudeebus.log("Signal '" + signal + "' emitter already implemented");
+	else {
+		agent.handler[signal] = function() {
+			var args = [];
+			for (var i=0; i < arguments.length; i++ )
+				args.push(arguments[i]);
+			service._emitSignal(agent.objectPath, signal, args);
 		};
-	else
-		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
+	}
 };
 
 
@@ -326,9 +311,9 @@ cloudeebus.Service.prototype._createWrapper = function(agent) {
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(agent.xml, "text/xml");
 	var ifXml = xmlDoc.getElementsByTagName("interface");
-	agent.jsHdl.wrapperFunc = {};
-	agent.jsHdl.methodId = {};
-	agent.jsHdl.methodId[agent.objectPath] = [];
+	agent.handler.wrapperFunc = {};
+	agent.handler.methodId = {};
+	agent.handler.methodId[agent.objectPath] = [];
 	for (var i=0; i < ifXml.length; i++) {
 		var ifName = ifXml[i].attributes.getNamedItem("name").value;
 		var ifChild = ifXml[i].firstChild;
@@ -353,26 +338,26 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 	var promise = new cloudeebus.Promise(function (resolver) {
 		function ServiceAddAgentSuccessCB(objPath) {
 			self.agents.push(agent);
+			try {
+				self._createWrapper(agent);
+			}
+			catch (e) {
+				var errorStr = cloudeebus.getError(e);
+				cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
+				resolver.reject(errorStr, true);
+				return;
+			}		
 			resolver.fulfill(objPath, true);
 		}
 		
 		function ServiceAddAgenterrorCB(error) {
 			var errorStr = cloudeebus.getError(error);
 			cloudeebus.log("Error adding agent : " + agent.objectPath + ", error: " + errorStr);
-			self.promise.resolver.reject(errorStr, true);
-		}
-		
-		try {
-			self._createWrapper(agent);
-		}
-		catch (e) {
-			var errorStr = cloudeebus.getError(e);
-			cloudeebus.log("Exception creating agent wrapper " + agent.objectPath + " : " + errorStr);
 			resolver.reject(errorStr, true);
-			return;
 		}
 		
 		var arglist = [
+		    self.name,
 		    agent.objectPath,
 		    agent.xml
 		    ];
@@ -386,7 +371,7 @@ cloudeebus.Service.prototype.addAgent = function(agent) {
 
 
 cloudeebus.Service.prototype._deleteWrapper = function(agent) {
-	var objJs = agent.jsHdl;
+	var objJs = agent.handler;
 	if (objJs.methodId[agent.objectPath]) {
 		while (objJs.methodId[agent.objectPath].length) {
 			try {
@@ -448,11 +433,11 @@ cloudeebus.Service.prototype._returnMethod = function(methodId, callIndex, succe
 };
 
 
-cloudeebus.Service.prototype._emitSignal = function(objectPath, signalName, result, successCB, errorCB) {
+cloudeebus.Service.prototype._emitSignal = function(objectPath, signalName, args, successCB, errorCB) {
 	var arglist = [
 	    objectPath,
 	    signalName,
-	    result
+	    JSON.stringify(args)
 	    ];
 
 	this.wampSession.call("emitSignal", arglist).then(successCB, errorCB);
@@ -730,6 +715,7 @@ cloudeebus.ProxyObject = function(session, busConnection, busName, objectPath) {
 	this.busName = busName; 
 	this.objectPath = objectPath; 
 	this.interfaceProxies = {};
+	this.childNodeNames = [];
 	return this;
 };
 
@@ -767,6 +753,10 @@ cloudeebus.ProxyObject.prototype._introspect = function(successCB, errorCB) {
 	function introspectSuccessCB(str) {
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(str, "text/xml");
+		var nodes = xmlDoc.getElementsByTagName("node");
+		// first node is the parent/head node
+		for(var i=1; i < nodes.length; i++)
+			self.childNodeNames.push(nodes[i].getAttribute("name"));
 		var interfaces = xmlDoc.getElementsByTagName("interface");
 		self.propInterfaces = [];
 		var supportDBusProperties = false;

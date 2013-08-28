@@ -168,9 +168,6 @@ cloudeebus.BusConnection.prototype.getObject = function(busName, objectPath, int
 cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 	var self = this;
 
-	if (!serviceName)
-		serviceName = "";
-	
 	var promise = new cloudeebus.Promise(function (resolver) {
 		var cloudeebusService = new cloudeebus.Service(self.wampSession, self, serviceName);
 	
@@ -200,13 +197,10 @@ cloudeebus.BusConnection.prototype.addService = function(serviceName) {
 
 
 /*****************************************************************************/
-//Generic definition for an agent. An agent needs :
-//objPath : a DBus path to access it
-//handler : a Javascript handler to process methods, 
-//xml : the xml which describe interface/methods/signals...
-cloudeebus.Agent = function(objPath, handler, xml) {
+
+cloudeebus.Agent = function(objectPath, handler, xml) {
 	this.xml = xml;
-	this.objectPath = objPath;
+	this.objectPath = objectPath;
 	this.handler = handler;
 	return this;
 };
@@ -298,30 +292,17 @@ cloudeebus.Service.prototype._addMethod = function(ifName, method, agent) {
 
 cloudeebus.Service.prototype._addSignal = function(ifName, signal, agent) {
 	var service = this;
-	var methodExist = false;
 
-	if (agent.handler.interfaceProxies && agent.handler.interfaceProxies[ifName])
-		if (agent.handler.interfaceProxies[ifName][signal]) {
-			methodExist = true;
-		} else {
-			agent.handler.interfaceProxies[ifName][signal] = function() {
-				var args = [];
-				for (var i=0; i < arguments.length; i++ )
-					args.push(arguments[i]);
-				service._emitSignal(agent.objectPath, signal, args);
-			};
-		return;
-	}
-
-	if ((agent.handler[signal] == undefined || agent.handler[signal] == null) && !methodExist)
+	if (agent.handler[signal])
+		cloudeebus.log("Signal '" + signal + "' emitter already implemented");
+	else {
 		agent.handler[signal] = function() {
 			var args = [];
 			for (var i=0; i < arguments.length; i++ )
 				args.push(arguments[i]);
 			service._emitSignal(agent.objectPath, signal, args);
 		};
-	else
-		cloudeebus.log("Can not create new method to emit signal '" + signal + "' in object JS this method already exist!");
+	}
 };
 
 

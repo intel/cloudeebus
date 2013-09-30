@@ -27,8 +27,10 @@ function _processWrappers(wrappers, value) {
 function _processWrappersAsync(wrappers, value) {
 	var taskid = -1;
 	function processAsyncOnce() {
-		_processWrappers(wrappers, value);
+		if (!wrappers.processed)
+			_processWrappers(wrappers, value);
 		clearInterval(taskid);
+		wrappers.processed = true;
 	}
 	taskid = setInterval(processAsyncOnce, 200);
 }

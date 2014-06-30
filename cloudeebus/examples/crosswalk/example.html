@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <p>Example</p>
+    <div id="output"></div>
+    <script>
+      function log(message) {
+        document.getElementById("output").innerHTML =
+            document.getElementById("output").innerHTML + "<br/>" + message;
+      }
+
+      log(cloudeebus);
+      cloudeebus.connect('', null, function() {}, function() {})
+      log(cloudeebus.SessionBus)
+      log(cloudeebus.SessionBus())
+      var trackerReady = function(status_proxy) {
+        status_proxy.GetProgress().then(function(result) { log("Tracker progress:" + result); },
+                                        function(result) { log("Tracker error:" + result); })
+      }
+      var tracker = cloudeebus.SessionBus().getObject("org.freedesktop.Tracker1", 
+                                                     "/org/freedesktop/Tracker1/Status",
+                                                     trackerReady,
+                                                     log);
+    </script>
+  </body>
+</html>

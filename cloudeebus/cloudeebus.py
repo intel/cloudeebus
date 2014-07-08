@@ -507,20 +507,18 @@ class CloudeebusService:
         if not matchDbus:
             return dbusString
 
-        result = {
-           "Boolean" : lambda x : dbus.Boolean( self.patternDbusBoolean.match( x ).group( 1 )),
-           "Byte"    : lambda x : dbus.Byte(    self.patternDbusByte.match(    x ).group( 1 )),
-           "Int16"   : lambda x : dbus.Int16(   self.patternDbusInt16.match(   x ).group( 1 )),
-           "Int32"   : lambda x : dbus.Int32(   self.patternDbusInt32.match(   x ).group( 1 )),
-           "Int64"   : lambda x : dbus.Int64(   self.patternDbusInt6.match(    x ).group( 1 )),
-           "UInt16"  : lambda x : dbus.UInt16(  self.patternDbusUInt16.match(  x ).group( 1 )),
-           "UInt32"  : lambda x : dbus.UInt32(  self.patternDbusUInt32.match(  x ).group( 1 )),
-           "UInt64"  : lambda x : dbus.UInt64(  self.patternDbusUInt6.match(   x ).group( 1 )),
-           "Double"  : lambda x : dbus.Double(  self.patternDbusDouble.match(  x ).group( 1 ))
-        }[matchDbus.group(1)](dbusString)
 
-        if not result:
-           return dbusString
+        result = {
+           "Boolean" : lambda x : dbus.Boolean(   self.patternDbusBoolean.match( x ).group( 1 ).lower() in ("yes", "true", "t", "1")),
+           "Byte"    : lambda x : dbus.Byte( int( self.patternDbusByte.match(    x ).group( 1 ))),
+           "Int16"   : lambda x : dbus.Int16(     self.patternDbusInt16.match(   x ).group( 1 )),
+           "Int32"   : lambda x : dbus.Int32(     self.patternDbusInt32.match(   x ).group( 1 )),
+           "Int64"   : lambda x : dbus.Int64(     self.patternDbusInt64.match(    x ).group( 1 )),
+           "UInt16"  : lambda x : dbus.UInt16(    self.patternDbusUInt16.match(  x ).group( 1 )),
+           "UInt32"  : lambda x : dbus.UInt32(    self.patternDbusUInt32.match(  x ).group( 1 )),
+           "UInt64"  : lambda x : dbus.UInt64(    self.patternDbusUInt64.match(   x ).group( 1 )),
+           "Double"  : lambda x : dbus.Double(    self.patternDbusDouble.match(  x ).group( 1 ))
+        }[matchDbus.group(1)](dbusString)
 
         return result
 

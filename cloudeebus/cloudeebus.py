@@ -563,10 +563,8 @@ class CloudeebusService:
         args = []
         if len(list) == 6:
             jsonArgs = json.loads(list[5])
-            print "JSON Arguments:", jsonArgs
             if jsonArgs:
                 args = self.decodeArgs( jsonArgs )
-                print "Decoded Arguments: ", args
         
         # get dbus proxy method
         method = self.proxyMethod(*list[0:5])

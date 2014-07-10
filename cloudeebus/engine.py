@@ -415,6 +415,16 @@ class CloudeebusService:
         self.localCtx = locals()
         self.globalCtx = globals()
 
+        self.patternDbus        = re.compile('^dbus\.(\w+)')
+        self.patternDbusBoolean = re.compile('^dbus.Boolean\((\w+)\)$')
+        self.patternDbusByte    = re.compile('^dbus.Byte\((\d+)\)$')
+        self.patternDbusInt16   = re.compile('^dbus.Int16\((\d+)\)$')
+        self.patternDbusInt32   = re.compile('^dbus.Int32\((\d+)\)$')
+        self.patternDbusInt64   = re.compile('^dbus.Int64\((\d+)\)$')
+        self.patternDbusUInt16  = re.compile('^dbus.UInt16\((\d+)\)$')
+        self.patternDbusUInt32  = re.compile('^dbus.UInt32\((\d+)\)$')
+        self.patternDbusUInt64  = re.compile('^dbus.UInt64\((\d+)\)$')
+        self.patternDbusDouble  = re.compile('^dbus.Double\((\d+\.\d+)\)$')
 
     def proxyObject(self, busName, serviceName, objectName):
         '''
@@ -440,6 +450,45 @@ class CloudeebusService:
             self.proxyMethods[id] = obj.get_dbus_method(methodName, interfaceName)
         return self.proxyMethods[id]
 
+    def decodeArgs( self, args ):
+        if isinstance( args, list ):
+            newArgs = []
+            for arg in args:
+                newArgs.append( self.decodeArgs( arg ))
+            return newArgs
+        elif isinstance( args, dict ):
+            newDict = {}
+            for key, value in args.iteritems():
+                key = self.decodeArgs( key )
+                newValue = self.decodeArgs( value )
+                newDict[key] = newValue
+            return newDict
+        elif isinstance( args, basestring ):
+            newArg = self.decodeDbusString( args )
+            return newArg
+        else:
+            return args
+
+    def decodeDbusString( self, dbusString ):
+        matchDbus = self.patternDbus.match( dbusString )
+
+        if not matchDbus:
+            return dbusString
+
+
+        result = {
+           "Boolean" : lambda x : dbus.Boolean(   self.patternDbusBoolean.match( x ).group( 1 ).lower() in ("yes", "true", "t", "1")),
+           "Byte"    : lambda x : dbus.Byte( int( self.patternDbusByte.match(    x ).group( 1 ))),
+           "Int16"   : lambda x : dbus.Int16(     self.patternDbusInt16.match(   x ).group( 1 )),
+           "Int32"   : lambda x : dbus.Int32(     self.patternDbusInt32.match(   x ).group( 1 )),
+           "Int64"   : lambda x : dbus.Int64(     self.patternDbusInt64.match(    x ).group( 1 )),
+           "UInt16"  : lambda x : dbus.UInt16(    self.patternDbusUInt16.match(  x ).group( 1 )),
+           "UInt32"  : lambda x : dbus.UInt32(    self.patternDbusUInt32.match(  x ).group( 1 )),
+           "UInt64"  : lambda x : dbus.UInt64(    self.patternDbusUInt64.match(   x ).group( 1 )),
+           "Double"  : lambda x : dbus.Double(    self.patternDbusDouble.match(  x ).group( 1 ))
+        }[matchDbus.group(1)](dbusString)
+
+        return result
 
     @exportRpc
     def dbusRegister(self, list):
@@ -481,7 +530,9 @@ class CloudeebusService:
         # parse JSON arg list
         args = []
         if len(list) == 6:
-            args = json.loads(list[5])
+            jsonArgs = json.loads(list[5])
+            if jsonArgs:
+                args = self.decodeArgs( jsonArgs )
         
         # get dbus proxy method
         method = self.proxyMethod(*list[0:5])
@@ -500,7 +551,13 @@ class CloudeebusService:
         objectPath = list[0]
         className = re.sub('/', '_', objectPath[1:])
         signalName = list[1]
-        args = json.loads(list[2])
+        args = []
+        jsonArgs = json.loads(list[2])
+        print "JSON Arguments:", jsonArgs
+        if jsonArgs:
+            args = self.decodeArgs( jsonArgs )
+            print "Decoded Arguments: ", args
+
         if (self.serviceAgents.has_key(className) == True):            
             exe_str = "self.serviceAgents['"+ className +"']."+ signalName + "("
             if len(args) > 0:

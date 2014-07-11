@@ -19,6 +19,7 @@
 # Luc Yriarte <luc.yriarte@intel.com>
 # Christophe Guiraud <christophe.guiraud@intel.com>
 # Frederic Paut <frederic.paut@intel.com>
+# Patrick Ohly <patrick.ohly@intel.com>
 #
 
 from setuptools import setup
@@ -26,8 +27,8 @@ from setuptools import setup
 setup(name = "cloudeebus",
 	version = "0.6.0",
 	description = "Javascript-DBus bridge",
-	author = "Luc Yriarte, Christophe Guiraud, Frederic Paut",
-	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com, frederic.paut@intel.com",
+	author = "Luc Yriarte, Christophe Guiraud, Frederic Paut, Patrick Ohly",
+	author_email = "luc.yriarte@intel.com, christophe.guiraud@intel.com, frederic.paut@intel.com, patrick.ohly@intel.com",
 	url = "https://github.com/01org/cloudeebus/wiki",
 	license = "http://www.apache.org/licenses/LICENSE-2.0",
 	scripts = ["cloudeebus/cloudeebus.py","cloudeebus/cloudeebusengine.py"],

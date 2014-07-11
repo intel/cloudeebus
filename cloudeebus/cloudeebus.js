@@ -29,7 +29,7 @@ var dbus = { // hook object for dbus types not translated by python-json
 /*****************************************************************************/
 
 var cloudeebus = window.cloudeebus = {
-		version: "0.6.0",
+		version: "0.6.1",
 		minVersion: "0.6.0"
 };
 

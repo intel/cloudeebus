@@ -47,7 +47,7 @@ if os.environ.get('CLOUDEEBUS_XWALK', False):
 else:
     from autobahn.wamp import exportRpc
 
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 OPENDOOR = False
 SERVICELIST = []
 

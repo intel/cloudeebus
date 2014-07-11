@@ -23,7 +23,7 @@
 # message passing instead of the original WebSocket/WAMP.
 #
 # Installation:
-# cloudeebus.js, xwalkcloudeebus.py and engine.py must be installed in
+# cloudeebus.js, xwalkcloudeebus.py and cloudeebusengine.py must be installed in
 # the same directory. xwalkcloudeebus.py (or a symlink to it) and a
 # symlink to libpycrosswalk.so must be in a directory that Crosswalk
 # searches for extensions.
@@ -67,11 +67,11 @@ from twisted.python import log
 
 import xwalk
 
-# Configure engine module. Partly has to be done before importing
+# Configure cloudeebus engine module. Partly has to be done before importing
 # because the engine needs to know how it is going to be used.
 os.environ['CLOUDEEBUS_XWALK'] = '1'
-import engine
-engine.OPENDOOR = True # No other process has access, so we need no additional credential checking.
+import cloudeebusengine
+cloudeebusengine.OPENDOOR = True # No other process has access, so we need no additional credential checking.
 
 class Factory:
   # Mapping from instance ID to hash with all subscribed topics.
@@ -81,9 +81,9 @@ class Factory:
       if topic in topics:
         xwalk.PostMessage(instance, json.dumps(['signal', topic, event]))
 
-engine.factory = Factory()
+cloudeebusengine.factory = Factory()
 
-service = engine.CloudeebusService({'permissions': [], 'authextra': '', 'services': []})
+service = cloudeebusengine.CloudeebusService({'permissions': [], 'authextra': '', 'services': []})
 methods = {}
 
 for method in inspect.getmembers(service.__class__, inspect.ismethod):

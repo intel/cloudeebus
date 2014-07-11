@@ -46,8 +46,8 @@ from twisted.python import log
 
 ###############################################################################
 
-from engine import VERSION, SERVICELIST, CloudeebusService, cache
-import engine
+from cloudeebusengine import VERSION, SERVICELIST, CloudeebusService, cache
+import cloudeebusengine
 
 OPENDOOR = False
 CREDENTIALS = {}
@@ -210,9 +210,9 @@ if __name__ == '__main__':
     factory.protocol = CloudeebusServerProtocol
     factory.setProtocolOptions(allowHixie76 = True)
 
-    # Configure engine for WAMP.
-    engine.factory = factory
-    engine.OPENDOOR = OPENDOOR
+    # Configure cloudeebus engine for WAMP.
+    cloudeebusengine.factory = factory
+    cloudeebusengine.OPENDOOR = OPENDOOR
 
     listenWS(factory)
     

@@ -33,7 +33,7 @@ from xml.etree.ElementTree import XMLParser
 
 from twisted.internet import defer
 
-# The user of engine.py must set this to some object
+# The user of cloudeebusengine.py must set this to some object
 # providing a dispatch(topicUri, event) method as in WampServerFactory
 factory = None
 

@@ -9,6 +9,21 @@
             document.getElementById("output").innerHTML + "<br/>" + message;
       }
 
+	function CreateTableView(result) {
+		var table = document.createElement("table");
+		for (var i=0; i<result.length; i++) {
+			var trNode = document.createElement("tr");
+			for (var j=0; j<result[i].length; j++) {
+				var tdNode = document.createElement("td");
+				tdNode.cell = result[i][j];
+				tdNode.appendChild(document.createTextNode(tdNode.cell));
+				trNode.appendChild(tdNode);
+			}
+			table.appendChild(trNode);
+		}
+		return table;
+	}	
+
       log(cloudeebus);
       cloudeebus.connect('', null, function() {}, function() {})
       log(cloudeebus.SessionBus)
@@ -20,6 +35,21 @@
       var tracker = cloudeebus.SessionBus().getObject("org.freedesktop.Tracker1", 
                                                      "/org/freedesktop/Tracker1/Status",
                                                      trackerReady,
+                                                     log);
+      var sparqlReady = function(sparqlproxy) {
+        var query = "SELECT DISTINCT ?c ?r ?d WHERE { ?c a rdfs:Class . ?r rdfs:domain ?c . ?r rdfs:range ?d } ORDER BY ?c ?r";
+        log(query);
+      	sparqlproxy.SparqlQuery(query).then(
+			function(result) {
+				var out = document.getElementById("output");
+				out.appendChild(document.createElement("hr"));
+				out.appendChild(CreateTableView(result));
+			}, 
+			log);
+      }
+      var sparql = cloudeebus.SessionBus().getObject("org.freedesktop.Tracker1", 
+                                                     "/org/freedesktop/Tracker1/Resources",
+                                                     sparqlReady,
                                                      log);
     </script>
   </body>
